@@ -200,25 +200,18 @@ function calculateAndValidateLines(lines, accountMap) {
  * Uses SELECT FOR UPDATE to prevent race conditions
  */
 async function getNextEntryNumber(organizationId, tx) {
-  // Get the current sequence from billing_settings
-  const billingSettings = await tx.billingSettings.findUnique({
-    where: { organization_id: organizationId },
-  });
-  
-  if (!billingSettings) {
+  const result = await tx.$queryRaw`
+    UPDATE billing_settings
+    SET journal_sequence = journal_sequence + 1
+    WHERE organization_id = ${organizationId}
+    RETURNING journal_sequence
+  `;
+
+  if (!result || result.length === 0) {
     throw new AccountingError('Billing settings not found for organization');
   }
-  
-  // Increment and get next number
-  const nextNumber = BigInt(billingSettings.journal_sequence ?? 0) + 1n;
-  
-  // Update the sequence
-  await tx.billingSettings.update({
-    where: { organization_id: organizationId },
-    data: { journal_sequence: nextNumber },
-  });
-  
-  return nextNumber;
+
+  return BigInt(result[0].journal_sequence);
 }
 
 /**

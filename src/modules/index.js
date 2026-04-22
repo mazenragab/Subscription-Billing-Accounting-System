@@ -8,6 +8,8 @@ import paymentsRoutes from './payments/payments.routes.js';
 import reportsRoutes from './reports/reports.routes.js';
 import discountCodesRoutes from './discount-codes/discount-codes.routes.js';
 import webhooksRoutes from './webhooks/webhooks.routes.js';
+import billingRoutes from './billing/billing.routes.js';
+import accountingRoutes from './accounting/accounting.routes.js';
 
 export function registerRoutes(app, options = {}) {
   const apiPrefix = options.apiPrefix || '/api/v1';
@@ -23,6 +25,8 @@ export function registerRoutes(app, options = {}) {
   app.use(`${apiPrefix}/reports`, reportsRoutes);
   app.use(`${apiPrefix}/discount-codes`, discountCodesRoutes);
   app.use(`${apiPrefix}/webhooks`, webhooksRoutes);
+  app.use(`${apiPrefix}/billing`, billingRoutes);
+  app.use(`${apiPrefix}/accounting`, accountingRoutes);
   
   // Return registered routes info
   const registeredRoutes = [
@@ -36,6 +40,8 @@ export function registerRoutes(app, options = {}) {
     'reports',
     'discount-codes',
     'webhooks',
+    'billing',
+    'accounting',
   ];
   
   return {
