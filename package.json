@@ -9,6 +9,9 @@
     "dev": "nodemon src/server.js",
     "worker": "node workers/index.js",
     "worker:dev": "nodemon workers/index.js",
+    "build": "prisma generate",
+    "postinstall": "prisma generate",
+    "vercel-build": "prisma generate && prisma migrate deploy",
     "db:migrate": "prisma migrate dev",
     "db:migrate:prod": "prisma migrate deploy",
     "db:seed": "node prisma/seed.js",
@@ -41,7 +44,9 @@
     "swagger-jsdoc": "^6.2.0",
     "swagger-ui-express": "^5.0.0",
     "uuid": "^9.0.0",
-    "winston": "^3.11.0"
+    "winston": "^3.11.0",
+    "prisma": "^5.7.0"
+
   },
   "devDependencies": {
     "eslint": "^8.55.0",
@@ -49,8 +54,7 @@
     "eslint-plugin-import": "^2.29.0",
     "eslint-plugin-node": "^11.1.0",
     "nodemon": "^3.0.2",
-    "prettier": "^3.1.0",
-    "prisma": "^5.7.0"
+    "prettier": "^3.1.0"
   },
   "nodemonConfig": {
     "watch": ["src", "workers"],
