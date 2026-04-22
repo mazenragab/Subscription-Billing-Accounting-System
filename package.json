@@ -44,7 +44,9 @@
     "swagger-jsdoc": "^6.2.0",
     "swagger-ui-express": "^5.0.0",
     "uuid": "^9.0.0",
-    "winston": "^3.11.0"
+    "winston": "^3.11.0",
+    "prisma": "^5.7.0"
+
   },
   "devDependencies": {
     "eslint": "^8.55.0",
@@ -52,8 +54,7 @@
     "eslint-plugin-import": "^2.29.0",
     "eslint-plugin-node": "^11.1.0",
     "nodemon": "^3.0.2",
-    "prettier": "^3.1.0",
-    "prisma": "^5.7.0"
+    "prettier": "^3.1.0"
   },
   "nodemonConfig": {
     "watch": ["src", "workers"],
