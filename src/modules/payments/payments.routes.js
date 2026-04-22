@@ -52,13 +52,6 @@ router.get('/stats', getPaymentStats);
 router.post('/webhook', paymentWebhook);
 
 /**
- * @route GET /api/v1/payments/:paymentId
- * @desc Get payment by ID
- * @access Private
- */
-router.get('/:paymentId', getPayment);
-
-/**
  * @route GET /api/v1/customers/:customerId/payments/summary
  * @desc Get customer payment summary
  * @access Private
@@ -108,5 +101,12 @@ router.post(
   validateMiddleware({ body: recordPaymentSchema }),
   processPaymentController
 );
+
+/**
+ * @route GET /api/v1/payments/:paymentId
+ * @desc Get payment by ID
+ * @access Private
+ */
+router.get('/:paymentId', getPayment);
 
 export default router;

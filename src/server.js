@@ -221,6 +221,7 @@ function logEndpointSummary() {
     { method: 'POST', path: '/api/v1/subscriptions/:id/upgrade', description: 'Upgrade plan' },
     { method: 'POST', path: '/api/v1/subscriptions/:id/downgrade', description: 'Downgrade plan' },
     { method: 'POST', path: '/api/v1/subscriptions/:id/apply-discount', description: 'Apply discount' },
+    { method: 'POST', path: '/api/v1/billing/run-monthly-invoices', description: 'Run monthly invoice generation' },
     { method: 'GET', path: '/api/v1/invoices', description: 'List invoices' },
     { method: 'POST', path: '/api/v1/invoices', description: 'Create draft invoice' },
     { method: 'GET', path: '/api/v1/invoices/:id', description: 'Get invoice' },
@@ -235,6 +236,8 @@ function logEndpointSummary() {
     { method: 'GET', path: '/api/v1/reports/ar-aging', description: 'AR aging' },
     { method: 'GET', path: '/api/v1/reports/mrr', description: 'MRR report' },
     { method: 'GET', path: '/api/v1/reports/churn', description: 'Churn report' },
+    { method: 'POST', path: '/api/v1/accounting/recognize-revenue', description: 'Run revenue recognition for period' },
+    { method: 'POST', path: '/api/v1/reports/revenue-recognition/run', description: 'Legacy recognition trigger route' },
   ];
   
   logger.info('Available endpoints:', { endpoints: endpoints.length });

@@ -20,6 +20,7 @@
     "db:generate": "prisma generate",
     "lint": "eslint src/ --ext .js",
     "lint:fix": "eslint src/ --ext .js --fix",
+    "test": "node --test tests/**/*.test.js",
     "format": "prettier --write \"src/**/*.js\"",
     "format:check": "prettier --check \"src/**/*.js\"",
     "clean": "rm -rf node_modules package-lock.json && npm install"

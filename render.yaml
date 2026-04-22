@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: subscription-billing-api
+    env: node
+    plan: starter
+    buildCommand: npm ci && npx prisma generate && npx prisma migrate deploy
+    startCommand: npm run start
+    healthCheckPath: /health
+    autoDeploy: true
+
+  - type: worker
+    name: subscription-billing-worker
+    env: node
+    plan: starter
+    buildCommand: npm ci && npx prisma generate && npx prisma migrate deploy
+    startCommand: npm run worker
+    autoDeploy: true

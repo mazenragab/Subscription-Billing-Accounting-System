@@ -160,7 +160,24 @@ export async function getBalanceSheet(organizationId, asOfDate) {
   // Group by account type
   const assets = accounts.filter(a => a.type === 'ASSET');
   const liabilities = accounts.filter(a => a.type === 'LIABILITY');
-  const equity = accounts.filter(a => a.type === 'EQUITY');
+  const equityAccounts = accounts.filter(a => a.type === 'EQUITY');
+  const revenueAccounts = accounts.filter(a => a.type === 'REVENUE');
+  const expenseAccounts = accounts.filter(a => a.type === 'EXPENSE');
+
+  // Treat cumulative net income as retained earnings to keep the accounting equation complete.
+  const retainedEarnings = revenueAccounts.reduce((sum, r) => sum + Number(r.balance_cents), 0)
+    - expenseAccounts.reduce((sum, e) => sum + Number(e.balance_cents), 0);
+
+  const equity = [
+    ...equityAccounts,
+    {
+      code: 'RETAINED_EARNINGS',
+      name: 'Retained Earnings',
+      type: 'EQUITY',
+      balance_cents: retainedEarnings,
+      is_system_calculated: true,
+    },
+  ];
   
   const totalAssets = assets.reduce((sum, a) => sum + Number(a.balance_cents), 0);
   const totalLiabilities = liabilities.reduce((sum, l) => sum + Number(l.balance_cents), 0);
@@ -351,6 +368,19 @@ export async function getChurnReport(organizationId, fromDate, toDate) {
       ],
     },
   });
+
+  // Get subscriptions active at end of period
+  const activeAtEnd = await prisma.subscription.count({
+    where: {
+      organization_id: organizationId,
+      status: { in: ['ACTIVE', 'TRIALING', 'PAST_DUE'] },
+      created_at: { lte: toDate },
+      OR: [
+        { cancelled_at: null },
+        { cancelled_at: { gt: toDate } },
+      ],
+    },
+  });
   
   // Get MRR at start of period
   const mrrAtStart = await getMRR(organizationId, fromDate);
@@ -373,7 +403,7 @@ export async function getChurnReport(organizationId, fromDate, toDate) {
       new_subscriptions: newSubscriptions,
       cancelled_subscriptions: cancelledSubscriptions,
       active_subscriptions_start: activeAtStart,
-      active_subscriptions_end: cancelledSubscriptions,
+      active_subscriptions_end: activeAtEnd,
       net_subscription_change: newSubscriptions - cancelledSubscriptions,
     },
     churn_rates: {

@@ -51,15 +51,22 @@ router.post(
 );
 
 /**
- * @route GET /api/v1/invoices/:id
- * @desc Get invoice by ID
+ * @route GET /api/v1/invoices/payments
+ * @desc Get organization-wide payments
  * @access Private
  */
-router.get('/:id', getInvoice);
+router.get('/payments', getOrganizationPayments);
+
+/**
+ * @route GET /api/v1/invoices/payments/:paymentId
+ * @desc Get payment by ID
+ * @access Private
+ */
+router.get('/payments/:paymentId', getPayment);
 
 /**
  * @route POST /api/v1/invoices/:id/issue
- * @desc Issue invoice (DRAFT → ISSUED)
+ * @desc Issue invoice (DRAFT -> ISSUED)
  * @access Private
  */
 router.post(
@@ -109,17 +116,10 @@ router.get('/:id/payments', getInvoicePayments);
 router.get('/:id/journal-entries', getJournalEntries);
 
 /**
- * @route GET /api/v1/payments
- * @desc Get organization-wide payments
+ * @route GET /api/v1/invoices/:id
+ * @desc Get invoice by ID
  * @access Private
  */
-router.get('/payments', getOrganizationPayments);
-
-/**
- * @route GET /api/v1/payments/:paymentId
- * @desc Get payment by ID
- * @access Private
- */
-router.get('/payments/:paymentId', getPayment);
+router.get('/:id', getInvoice);
 
 export default router;
