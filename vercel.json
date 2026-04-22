@@ -1,0 +1,12 @@
+{
+  "buildCommand": "npx prisma generate && npm run build",
+  "devCommand": "npm run dev",
+  "installCommand": "npm install",
+  "framework": null,
+  "outputDirectory": ".",
+  "functions": {
+    "src/server.js": {
+      "maxDuration": 60
+    }
+  }
+}
