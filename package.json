@@ -1,0 +1,77 @@
+{
+  "name": "subscription-billing",
+  "version": "1.0.0",
+  "description": "Multi-tenant subscription billing & accounting system with double-entry bookkeeping",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "worker": "node workers/index.js",
+    "worker:dev": "nodemon workers/index.js",
+    "db:migrate": "prisma migrate dev",
+    "db:migrate:prod": "prisma migrate deploy",
+    "db:seed": "node prisma/seed.js",
+    "db:reset": "prisma migrate reset --force",
+    "db:studio": "prisma studio",
+    "db:generate": "prisma generate",
+    "lint": "eslint src/ --ext .js",
+    "lint:fix": "eslint src/ --ext .js --fix",
+    "format": "prettier --write \"src/**/*.js\"",
+    "format:check": "prettier --check \"src/**/*.js\"",
+    "clean": "rm -rf node_modules package-lock.json && npm install"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.7.0",
+    "axios": "^1.6.0",
+    "bcryptjs": "^2.4.3",
+    "bullmq": "^5.1.0",
+    "cookie-parser": "^1.4.6",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.0",
+    "express": "^4.18.2",
+    "express-async-errors": "^3.1.1",
+    "express-rate-limit": "^7.1.0",
+    "helmet": "^7.1.0",
+    "ioredis": "^5.3.0",
+    "joi": "^17.11.0",
+    "jsonwebtoken": "^9.0.0",
+    "morgan": "^1.10.0",
+    "rate-limit-redis": "^4.0.0",
+    "swagger-jsdoc": "^6.2.0",
+    "swagger-ui-express": "^5.0.0",
+    "uuid": "^9.0.0",
+    "winston": "^3.11.0"
+  },
+  "devDependencies": {
+    "eslint": "^8.55.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-import": "^2.29.0",
+    "eslint-plugin-node": "^11.1.0",
+    "nodemon": "^3.0.2",
+    "prettier": "^3.1.0",
+    "prisma": "^5.7.0"
+  },
+  "nodemonConfig": {
+    "watch": ["src", "workers"],
+    "ext": "js,json",
+    "ignore": ["node_modules/", "coverage/"],
+    "env": {
+      "NODE_ENV": "development"
+    }
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=9.0.0"
+  },
+  "keywords": [
+    "billing",
+    "subscription",
+    "accounting",
+    "double-entry",
+    "saas",
+    "multi-tenant"
+  ],
+  "author": "",
+  "license": "ISC"
+}

@@ -1,0 +1,571 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// TENANT MANAGEMENT
+// ============================================================
+
+model Organization {
+  id         String   @id @default(uuid())
+  name       String   @db.VarChar(255)
+  slug       String   @unique @db.VarChar(100)
+  status     String   @default("ACTIVE") @db.VarChar(20)
+  created_at DateTime @default(now()) @db.Timestamptz
+  updated_at DateTime @updatedAt @db.Timestamptz
+  deleted_at DateTime? @db.Timestamptz
+
+  billing_settings         BillingSettings?
+  user_organization_roles  UserOrganizationRole[]
+  customers                Customer[]
+  plans                    Plan[]
+  discount_codes           DiscountCode[]
+  subscriptions            Subscription[]
+  invoices                 Invoice[]
+  payments                 Payment[]
+  payment_attempts         PaymentAttempt[]
+  chart_of_accounts        ChartOfAccount[]
+  journal_entries          JournalEntry[]
+  journal_entry_lines      JournalEntryLine[]
+  revenue_recognition_schedules RevenueRecognitionSchedule[]
+  webhook_endpoints        WebhookEndpoint[]
+  webhook_events           WebhookEvent[]
+  audit_logs               AuditLog[]
+  payment_methods          PaymentMethod[]
+
+  @@map("organizations")
+}
+
+model BillingSettings {
+  id                  String   @id @default(uuid())
+  organization_id     String   @unique
+  currency            String   @default("USD") @db.Char(3)
+  timezone            String   @default("UTC") @db.VarChar(50)
+  invoice_prefix      String   @default("INV") @db.VarChar(10)
+  invoice_sequence    BigInt   @default(0)
+  journal_sequence    BigInt   @default(0)
+  payment_terms_days  Int      @default(30)
+  tax_rate_bps        Int      @default(0)
+  dunning_enabled     Boolean  @default(true)
+  dunning_retry_days  Int[]    @default([3, 7, 14])
+  created_at          DateTime @default(now()) @db.Timestamptz
+  updated_at          DateTime @updatedAt @db.Timestamptz
+
+  organization Organization @relation(fields: [organization_id], references: [id])
+
+  @@map("billing_settings")
+}
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique @db.VarChar(255)
+  password_hash String    @db.VarChar(255)
+  name          String    @db.VarChar(255)
+  status        String    @default("ACTIVE") @db.VarChar(20)
+  last_login_at DateTime? @db.Timestamptz
+  created_at    DateTime  @default(now()) @db.Timestamptz
+  updated_at    DateTime  @updatedAt @db.Timestamptz
+
+  organization_roles UserOrganizationRole[]
+  journal_entries    JournalEntry[]         @relation("CreatedByUser")
+  audit_logs         AuditLog[]
+  subscription_status_history SubscriptionStatusHistory[]
+
+  @@map("users")
+}
+
+model UserOrganizationRole {
+  id              String   @id @default(uuid())
+  user_id         String
+  organization_id String
+  role            String   @db.VarChar(30)
+  created_at      DateTime @default(now()) @db.Timestamptz
+
+  user         User         @relation(fields: [user_id], references: [id])
+  organization Organization @relation(fields: [organization_id], references: [id])
+
+  @@unique([user_id, organization_id])
+  @@index([organization_id])
+  @@index([user_id])
+  @@map("user_organization_roles")
+}
+
+// ============================================================
+// PRODUCT CATALOG
+// ============================================================
+
+model Plan {
+  id              String    @id @default(uuid())
+  organization_id String
+  name            String    @db.VarChar(100)
+  description     String?   @db.Text
+  amount_cents    Int
+  currency        String    @default("USD") @db.Char(3)
+  interval        String    @db.VarChar(20)
+  trial_days      Int       @default(0)
+  is_active       Boolean   @default(true)
+  is_public       Boolean   @default(true)
+  sort_order      Int       @default(0)
+  created_at      DateTime  @default(now()) @db.Timestamptz
+  updated_at      DateTime  @updatedAt @db.Timestamptz
+  deleted_at      DateTime? @db.Timestamptz
+
+  organization  Organization  @relation(fields: [organization_id], references: [id])
+  features      PlanFeature[]
+  subscriptions Subscription[]
+  pending_subscriptions Subscription[] @relation("PendingPlan")
+
+  @@unique([organization_id, name])
+  @@index([organization_id])
+  @@map("plans")
+}
+
+model PlanFeature {
+  id            String   @id @default(uuid())
+  plan_id       String
+  feature_key   String   @db.VarChar(100)
+  feature_value String   @db.VarChar(255)
+  created_at    DateTime @default(now()) @db.Timestamptz
+
+  plan Plan @relation(fields: [plan_id], references: [id])
+
+  @@unique([plan_id, feature_key])
+  @@map("plan_features")
+}
+
+model DiscountCode {
+  id              String    @id @default(uuid())
+  organization_id String
+  code            String    @db.VarChar(50)
+  type            String    @db.VarChar(20)
+  value           Int
+  max_uses        Int?
+  uses_count      Int       @default(0)
+  valid_from      DateTime? @db.Timestamptz
+  valid_until     DateTime? @db.Timestamptz
+  is_active       Boolean   @default(true)
+  created_at      DateTime  @default(now()) @db.Timestamptz
+
+  organization           Organization           @relation(fields: [organization_id], references: [id])
+  subscription_discounts SubscriptionDiscount[]
+
+  @@unique([organization_id, code])
+  @@index([organization_id])
+  @@map("discount_codes")
+}
+
+// ============================================================
+// CUSTOMER MANAGEMENT
+// ============================================================
+
+model Customer {
+  id              String    @id @default(uuid())
+  organization_id String
+  external_id     String?   @db.VarChar(100)
+  name            String    @db.VarChar(255)
+  email           String    @db.VarChar(255)
+  phone           String?   @db.VarChar(30)
+  status          String    @default("ACTIVE") @db.VarChar(20)
+  notes           String?   @db.Text
+  created_at      DateTime  @default(now()) @db.Timestamptz
+  updated_at      DateTime  @updatedAt @db.Timestamptz
+  deleted_at      DateTime? @db.Timestamptz
+
+  organization Organization        @relation(fields: [organization_id], references: [id])
+  billing_info CustomerBillingInfo?
+  subscriptions Subscription[]
+  invoices      Invoice[]
+  payments      Payment[]
+  payment_attempts PaymentAttempt[]
+  payment_methods PaymentMethod[]
+
+  @@unique([organization_id, email])
+  @@index([organization_id])
+  @@index([organization_id, email])
+  @@map("customers")
+}
+
+model CustomerBillingInfo {
+  id              String    @id @default(uuid())
+  customer_id     String    @unique
+  organization_id String
+  billing_name    String?   @db.VarChar(255)
+  billing_email   String?   @db.VarChar(255)
+  address_line1   String?   @db.VarChar(255)
+  address_line2   String?   @db.VarChar(255)
+  city            String?   @db.VarChar(100)
+  state           String?   @db.VarChar(100)
+  postal_code     String?   @db.VarChar(20)
+  country_code    String?   @db.Char(2)
+  tax_id          String?   @db.VarChar(50)
+  updated_at      DateTime  @updatedAt @db.Timestamptz
+
+  customer Customer @relation(fields: [customer_id], references: [id])
+
+  @@map("customer_billing_info")
+}
+
+// ============================================================
+// SUBSCRIPTION ENGINE
+// ============================================================
+
+model Subscription {
+  id                   String    @id @default(uuid())
+  organization_id      String
+  customer_id          String
+  plan_id              String
+  status               String    @default("TRIALING") @db.VarChar(20)
+  billing_anchor_day   Int       @default(1)
+  current_period_start DateTime  @db.Date
+  current_period_end   DateTime  @db.Date
+  trial_start          DateTime? @db.Date
+  trial_end            DateTime? @db.Date
+  cancel_at_period_end Boolean   @default(false)
+  cancelled_at         DateTime? @db.Timestamptz
+  cancellation_reason  String?   @db.Text
+  pending_plan_id      String?
+  created_at           DateTime  @default(now()) @db.Timestamptz
+  updated_at           DateTime  @updatedAt @db.Timestamptz
+
+  organization  Organization @relation(fields: [organization_id], references: [id])
+  customer      Customer     @relation(fields: [customer_id], references: [id])
+  plan          Plan         @relation(fields: [plan_id], references: [id])
+  pending_plan  Plan?        @relation("PendingPlan", fields: [pending_plan_id], references: [id])
+
+  discounts      SubscriptionDiscount[]
+  status_history SubscriptionStatusHistory[]
+  invoices       Invoice[]
+  revenue_recognition_schedules RevenueRecognitionSchedule[]
+
+  @@index([organization_id])
+  @@index([customer_id])
+  @@index([plan_id])
+  @@index([organization_id, status])
+  @@index([current_period_end])
+  @@map("subscriptions")
+}
+
+model SubscriptionDiscount {
+  id               String    @id @default(uuid())
+  organization_id  String
+  subscription_id  String
+  discount_code_id String
+  applied_at       DateTime  @default(now()) @db.Timestamptz
+  expires_at       DateTime? @db.Timestamptz
+  is_active        Boolean   @default(true)
+
+  subscription  Subscription @relation(fields: [subscription_id], references: [id])
+  discount_code DiscountCode @relation(fields: [discount_code_id], references: [id])
+
+  @@unique([subscription_id, discount_code_id])
+  @@map("subscription_discounts")
+}
+
+model SubscriptionStatusHistory {
+  id              String   @id @default(uuid())
+  organization_id String
+  subscription_id String
+  from_status     String   @db.VarChar(20)
+  to_status       String   @db.VarChar(20)
+  reason          String?  @db.Text
+  changed_by_id   String?
+  created_at      DateTime @default(now()) @db.Timestamptz
+
+  subscription Subscription @relation(fields: [subscription_id], references: [id])
+  changed_by   User?        @relation(fields: [changed_by_id], references: [id])
+
+  @@index([subscription_id])
+  @@map("subscription_status_history")
+}
+
+// ============================================================
+// BILLING ENGINE
+// ============================================================
+
+model Invoice {
+  id              String    @id @default(uuid())
+  organization_id String
+  customer_id     String
+  subscription_id String
+  invoice_number  String    @db.VarChar(30)
+  status          String    @default("DRAFT") @db.VarChar(20)
+  subtotal_cents  Int       @default(0)
+  discount_cents  Int       @default(0)
+  tax_cents       Int       @default(0)
+  total_cents     Int       @default(0)
+  currency        String    @default("USD") @db.Char(3)
+  period_start    DateTime  @db.Date
+  period_end      DateTime  @db.Date
+  issued_at       DateTime? @db.Timestamptz
+  due_at          DateTime? @db.Timestamptz
+  paid_at         DateTime? @db.Timestamptz
+  voided_at       DateTime? @db.Timestamptz
+  customer_name   String    @db.VarChar(255)
+  customer_email  String    @db.VarChar(255)
+  notes           String?   @db.Text
+  created_at      DateTime  @default(now()) @db.Timestamptz
+  updated_at      DateTime  @updatedAt @db.Timestamptz
+
+  organization  Organization @relation(fields: [organization_id], references: [id])
+  customer      Customer     @relation(fields: [customer_id], references: [id])
+  subscription  Subscription @relation(fields: [subscription_id], references: [id])
+
+  line_items    InvoiceLineItem[]
+  payments      Payment[]
+  payment_attempts PaymentAttempt[]
+  revenue_recognition_schedules RevenueRecognitionSchedule[]
+
+  @@unique([organization_id, invoice_number])
+  @@index([organization_id])
+  @@index([customer_id])
+  @@index([subscription_id])
+  @@index([organization_id, status])
+  @@index([organization_id, due_at])
+  @@index([organization_id, period_start, period_end])
+  @@map("invoices")
+}
+
+model InvoiceLineItem {
+  id                String    @id @default(uuid())
+  organization_id   String
+  invoice_id        String
+  description       String    @db.VarChar(500)
+  quantity          Int       @default(1)
+  unit_amount_cents Int
+  amount_cents      Int
+  plan_id           String?
+  plan_name         String?   @db.VarChar(100)
+  period_start      DateTime? @db.Date
+  period_end        DateTime? @db.Date
+  created_at        DateTime  @default(now()) @db.Timestamptz
+
+  invoice Invoice @relation(fields: [invoice_id], references: [id])
+
+  @@index([invoice_id])
+  @@map("invoice_line_items")
+}
+
+model Payment {
+  id               String   @id @default(uuid())
+  organization_id  String
+  invoice_id       String
+  customer_id      String
+  amount_cents     Int
+  currency         String   @default("USD") @db.Char(3)
+  method           String   @db.VarChar(30)
+  reference        String?  @db.VarChar(100)
+  idempotency_key  String   @db.VarChar(100)
+  paid_at          DateTime @db.Timestamptz
+  journal_entry_id String?
+  created_at       DateTime @default(now()) @db.Timestamptz
+
+  organization   Organization  @relation(fields: [organization_id], references: [id])
+  invoice        Invoice       @relation(fields: [invoice_id], references: [id])
+  customer       Customer      @relation(fields: [customer_id], references: [id])
+  journal_entry  JournalEntry? @relation(fields: [journal_entry_id], references: [id])
+
+  @@unique([organization_id, idempotency_key])
+  @@index([invoice_id])
+  @@index([organization_id, paid_at(sort: Desc)])
+  @@map("payments")
+}
+
+model PaymentAttempt {
+  id              String    @id @default(uuid())
+  organization_id String
+  invoice_id      String
+  customer_id     String
+  attempt_number  Int
+  status          String    @db.VarChar(20)
+  failure_reason  String?   @db.Text
+  attempted_at    DateTime  @default(now()) @db.Timestamptz
+  next_retry_at   DateTime? @db.Timestamptz
+
+  organization Organization @relation(fields: [organization_id], references: [id])
+  invoice      Invoice      @relation(fields: [invoice_id], references: [id])
+  customer     Customer     @relation(fields: [customer_id], references: [id])
+
+  @@index([invoice_id])
+  @@map("payment_attempts")
+}
+
+model PaymentMethod {
+  id              String   @id @default(uuid())
+  organization_id String
+  customer_id     String
+  type            String   @db.VarChar(20)
+  last4           String   @db.VarChar(4)
+  expiry_month    Int?
+  expiry_year     Int?
+  holder_name     String   @db.VarChar(255)
+  is_default      Boolean  @default(false)
+  is_deleted      Boolean  @default(false)
+  created_at      DateTime @default(now()) @db.Timestamptz
+  updated_at      DateTime @updatedAt @db.Timestamptz
+
+  organization Organization @relation(fields: [organization_id], references: [id])
+  customer      Customer     @relation(fields: [customer_id], references: [id])
+
+  @@index([organization_id])
+  @@index([customer_id])
+  @@map("payment_methods")
+}
+
+// ============================================================
+// ACCOUNTING ENGINE — IMMUTABLE LEDGER
+// ============================================================
+
+model ChartOfAccount {
+  id              String   @id @default(uuid())
+  organization_id String
+  code            String   @db.VarChar(10)
+  name            String   @db.VarChar(100)
+  type            String   @db.VarChar(20)
+  normal_balance  String   @db.VarChar(6)
+  is_system       Boolean  @default(false)
+  is_active       Boolean  @default(true)
+  description     String?  @db.Text
+  created_at      DateTime @default(now()) @db.Timestamptz
+
+  organization        Organization       @relation(fields: [organization_id], references: [id])
+  journal_entry_lines JournalEntryLine[]
+
+  @@unique([organization_id, code])
+  @@index([organization_id])
+  @@map("chart_of_accounts")
+}
+
+model JournalEntry {
+  id                String   @id @default(uuid())
+  organization_id   String
+  entry_number      BigInt
+  description       String   @db.VarChar(500)
+  status            String   @default("POSTED") @db.VarChar(10)
+  source_type       String   @db.VarChar(30)
+  source_id         String
+  total_debit_cents Int
+  period_month      DateTime @db.Date
+  reversal_of_id    String?
+  posted_at         DateTime @default(now()) @db.Timestamptz
+  created_by_id     String?
+  created_at        DateTime @default(now()) @db.Timestamptz
+
+  organization Organization     @relation(fields: [organization_id], references: [id])
+  created_by   User?            @relation("CreatedByUser", fields: [created_by_id], references: [id])
+  lines        JournalEntryLine[]
+  payments     Payment[]
+  revenue_recognition_schedules RevenueRecognitionSchedule[]
+
+  @@unique([organization_id, entry_number])
+  @@index([source_type, source_id])
+  @@index([organization_id, period_month])
+  @@index([organization_id, posted_at(sort: Desc)])
+  @@index([reversal_of_id])
+  @@map("journal_entries")
+}
+
+model JournalEntryLine {
+  id               String   @id @default(uuid())
+  journal_entry_id String
+  organization_id  String
+  account_id       String
+  type             String   @db.VarChar(6)
+  amount_cents     Int
+  currency         String   @default("USD") @db.Char(3)
+  description      String?  @db.VarChar(300)
+  created_at       DateTime @default(now()) @db.Timestamptz
+
+  journal_entry JournalEntry   @relation(fields: [journal_entry_id], references: [id])
+  organization  Organization   @relation(fields: [organization_id], references: [id])
+  account       ChartOfAccount @relation(fields: [account_id], references: [id])
+
+  @@index([journal_entry_id])
+  @@index([account_id])
+  @@index([organization_id, account_id, created_at(sort: Desc)])
+  @@map("journal_entry_lines")
+}
+
+model RevenueRecognitionSchedule {
+  id               String    @id @default(uuid())
+  organization_id  String
+  invoice_id       String
+  subscription_id  String
+  period_month     DateTime  @db.Date
+  amount_cents     Int
+  status           String    @default("PENDING") @db.VarChar(15)
+  recognized_at    DateTime? @db.Timestamptz
+  journal_entry_id String?
+
+  organization  Organization  @relation(fields: [organization_id], references: [id])
+  invoice       Invoice       @relation(fields: [invoice_id], references: [id])
+  subscription  Subscription  @relation(fields: [subscription_id], references: [id])
+  journal_entry JournalEntry? @relation(fields: [journal_entry_id], references: [id])
+
+  @@unique([invoice_id, period_month])
+  @@index([organization_id, status, period_month])
+  @@map("revenue_recognition_schedules")
+}
+
+// ============================================================
+// WEBHOOKS & AUDIT
+// ============================================================
+
+model WebhookEndpoint {
+  id              String   @id @default(uuid())
+  organization_id String
+  url             String   @db.VarChar(500)
+  secret          String   @db.VarChar(100)
+  events          String[]
+  is_active       Boolean  @default(true)
+  created_at      DateTime @default(now()) @db.Timestamptz
+
+  organization Organization  @relation(fields: [organization_id], references: [id])
+  events_log   WebhookEvent[]
+
+  @@index([organization_id])
+  @@map("webhook_endpoints")
+}
+
+model WebhookEvent {
+  id               String    @id @default(uuid())
+  organization_id  String
+  endpoint_id      String
+  event_type       String    @db.VarChar(100)
+  payload          Json
+  status           String    @default("PENDING") @db.VarChar(20)
+  attempts         Int       @default(0)
+  last_attempted_at DateTime? @db.Timestamptz
+  delivered_at     DateTime? @db.Timestamptz
+  created_at       DateTime  @default(now()) @db.Timestamptz
+
+  organization Organization    @relation(fields: [organization_id], references: [id])
+  endpoint     WebhookEndpoint @relation(fields: [endpoint_id], references: [id])
+
+  @@index([organization_id, status, created_at])
+  @@map("webhook_events")
+}
+
+model AuditLog {
+  id              String   @id @default(uuid())
+  organization_id String
+  user_id         String?
+  action          String   @db.VarChar(100)
+  resource_type   String   @db.VarChar(50)
+  resource_id     String
+  changes         Json?
+  ip_address      String?  @db.VarChar(45)
+  user_agent      String?  @db.Text
+  created_at      DateTime @default(now()) @db.Timestamptz
+
+  organization Organization @relation(fields: [organization_id], references: [id])
+  user         User?        @relation(fields: [user_id], references: [id])
+
+  @@index([organization_id, created_at(sort: Desc)])
+  @@index([resource_type, resource_id])
+  @@map("audit_logs")
+}
