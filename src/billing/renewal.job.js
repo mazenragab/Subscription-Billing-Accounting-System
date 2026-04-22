@@ -3,6 +3,7 @@ import redis from '../config/redis.js';
 import { prisma } from '../config/database.js';
 import logger from '../shared/utils/logger.js';
 import { calculateNextPeriod, canRenewSubscription } from './billing-cycle.service.js';
+import { generateIssuedInvoiceForPeriod } from './invoice-generation.service.js';
 
 /**
  * Renewal Queue and Worker
@@ -80,10 +81,16 @@ export async function cancelRenewal(subscriptionId) {
  * @param {Object} tx - Prisma transaction client (optional)
  * @param {Object} options - Renewal options
  * @param {Date} options.effectiveDate - Date used to determine whether renewal is due
+ * @param {boolean} options.generateInvoice - Whether to generate an invoice for the new period
+ * @param {Date} options.invoiceIssuedAt - Issue date for generated invoice
+ * @param {string|null} options.createdById - User ID triggering the renewal (if manual)
  * @returns {Promise<Object>} Renewal result
  */
 export async function processRenewal(subscriptionId, tx = prisma, options = {}) {
   const effectiveDate = options.effectiveDate || new Date();
+  const shouldGenerateInvoice = options.generateInvoice !== false;
+  const invoiceIssuedAt = options.invoiceIssuedAt || effectiveDate;
+  const createdById = options.createdById ?? null;
 
   const subscription = await tx.subscription.findUnique({
     where: { id: subscriptionId },
@@ -166,6 +173,24 @@ export async function processRenewal(subscriptionId, tx = prisma, options = {}) 
     newPeriodEnd: periodEnd,
     planId,
   });
+
+  let invoice = null;
+  if (shouldGenerateInvoice) {
+    invoice = await generateIssuedInvoiceForPeriod({
+      organizationId: subscription.organization_id,
+      subscriptionId: updatedSubscription.id,
+      customerId: subscription.customer_id,
+      customerName: subscription.customer.name,
+      customerEmail: subscription.customer.email,
+      plan,
+      periodStart,
+      periodEnd,
+      issuedAt: invoiceIssuedAt,
+      createdById,
+      tx,
+      notes: 'Auto-generated from subscription renewal',
+    });
+  }
   
   return {
     renewed: true,
@@ -174,6 +199,7 @@ export async function processRenewal(subscriptionId, tx = prisma, options = {}) 
     periodStart,
     periodEnd,
     plan,
+    invoice,
   };
 }
 

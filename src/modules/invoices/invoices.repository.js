@@ -157,24 +157,22 @@ export async function listInvoices(organizationId, filters = {}, pagination = {}
  * @returns {Promise<string>} Next invoice number
  */
 export async function generateNextInvoiceNumber(organizationId, tx) {
-  const billingSettings = await tx.billingSettings.findUnique({
-    where: { organization_id: organizationId },
-  });
-  
-  if (!billingSettings) {
+  const result = await tx.$queryRaw`
+    UPDATE billing_settings
+    SET invoice_sequence = invoice_sequence + 1
+    WHERE organization_id = ${organizationId}
+    RETURNING invoice_sequence, invoice_prefix
+  `;
+
+  if (!result || result.length === 0) {
     throw new Error('Billing settings not found for organization');
   }
-  
-  const nextSequence = BigInt(billingSettings.invoice_sequence ?? 0) + 1n;
+
+  const nextSequence = BigInt(result[0].invoice_sequence);
+  const invoicePrefix = result[0].invoice_prefix || 'INV';
   const year = new Date().getFullYear();
   const paddedNumber = String(nextSequence).padStart(6, '0');
-  const invoiceNumber = `${billingSettings.invoice_prefix}-${year}-${paddedNumber}`;
-  
-  // Update sequence
-  await tx.billingSettings.update({
-    where: { organization_id: organizationId },
-    data: { invoice_sequence: nextSequence },
-  });
+  const invoiceNumber = `${invoicePrefix}-${year}-${paddedNumber}`;
   
   return invoiceNumber;
 }

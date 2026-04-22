@@ -3,9 +3,7 @@ import logger from '../../shared/utils/logger.js';
 import { getSafeAnchorDay, calculateInitialPeriod, calculateNextPeriod } from '../../billing/billing-cycle.service.js';
 import { calculateImmediateProration } from '../../billing/proration.service.js';
 import { scheduleRenewal, cancelRenewal, processRenewal } from '../../billing/renewal.job.js';
-import { createInvoice, generateNextInvoiceNumber, updateInvoiceStatus } from '../invoices/invoices.repository.js';
-import { createInvoiceJournalEntry } from '../../accounting/journal.service.js';
-import { createRecognitionSchedules } from '../../accounting/recognition.service.js';
+import { generateIssuedInvoiceForPeriod } from '../../billing/invoice-generation.service.js';
 import { ValidationError, InvalidTransitionError } from '../../shared/errors/index.js';
 import {
   getSubscriptionById,
@@ -167,7 +165,12 @@ export async function runMonthlyInvoicingService(organizationId, data, userId) {
         const renewalResult = await processRenewal(
           dueSubscription.id,
           tx,
-          { effectiveDate: asOfDate }
+          {
+            effectiveDate: asOfDate,
+            generateInvoice: true,
+            invoiceIssuedAt: asOfDate,
+            createdById: userId,
+          }
         );
 
         if (!renewalResult.renewed) {
@@ -178,86 +181,12 @@ export async function runMonthlyInvoicingService(organizationId, data, userId) {
           };
         }
 
-        const subtotalCents = renewalResult.plan.amount_cents;
-        const invoiceNumber = await generateNextInvoiceNumber(organizationId, tx);
-        const billingSettings = await tx.billingSettings.findUnique({
-          where: { organization_id: organizationId },
-          select: { payment_terms_days: true },
-        });
-
-        const issuedAt = new Date(asOfDate);
-        const paymentTermsDays = billingSettings?.payment_terms_days || 30;
-        const dueAt = new Date(issuedAt.getTime() + (paymentTermsDays * 24 * 60 * 60 * 1000));
-
-        const lineItemDescription = `Subscription ${renewalResult.plan.name} (${renewalResult.periodStart.toISOString().slice(0, 10)} to ${renewalResult.periodEnd.toISOString().slice(0, 10)})`;
-
-        const invoice = await createInvoice(
-          organizationId,
-          {
-            customer_id: renewalResult.customer.id,
-            subscription_id: renewalResult.subscription.id,
-            invoice_number: invoiceNumber,
-            subtotal_cents: subtotalCents,
-            discount_cents: 0,
-            tax_cents: 0,
-            total_cents: subtotalCents,
-            currency: renewalResult.plan.currency || 'USD',
-            period_start: renewalResult.periodStart,
-            period_end: renewalResult.periodEnd,
-            customer_name: renewalResult.customer.name,
-            customer_email: renewalResult.customer.email,
-            notes: 'Auto-generated from monthly renewal run',
-          },
-          [
-            {
-              description: lineItemDescription,
-              quantity: 1,
-              unit_amount_cents: subtotalCents,
-              amount_cents: subtotalCents,
-              plan_id: renewalResult.plan.id,
-              plan_name: renewalResult.plan.name,
-              period_start: renewalResult.periodStart,
-              period_end: renewalResult.periodEnd,
-            },
-          ],
-          tx
-        );
-
-        const issuedInvoice = await updateInvoiceStatus(
-          invoice.id,
-          'ISSUED',
-          {
-            invoice_number: invoiceNumber,
-            issued_at: issuedAt,
-            due_at: dueAt,
-          },
-          tx
-        );
-
-        await createInvoiceJournalEntry({
-          organizationId,
-          invoiceId: invoice.id,
-          totalCents: invoice.total_cents,
-          createdById: userId,
-          tx,
-        });
-
-        await createRecognitionSchedules({
-          organizationId,
-          invoiceId: invoice.id,
-          subscriptionId: renewalResult.subscription.id,
-          periodStart: renewalResult.periodStart,
-          periodEnd: renewalResult.periodEnd,
-          totalCents: invoice.total_cents,
-          tx,
-        });
-
         return {
           renewed: true,
           subscriptionId: renewalResult.subscription.id,
-          invoiceId: issuedInvoice.id,
-          invoiceNumber: issuedInvoice.invoice_number,
-          totalCents: issuedInvoice.total_cents,
+          invoiceId: renewalResult.invoice?.id || null,
+          invoiceNumber: renewalResult.invoice?.invoice_number || null,
+          totalCents: renewalResult.invoice?.total_cents || 0,
         };
       });
 
@@ -267,13 +196,20 @@ export async function runMonthlyInvoicingService(organizationId, data, userId) {
       }
 
       summary.renewed++;
-      summary.invoiced++;
-      summary.invoices.push({
-        subscription_id: result.subscriptionId,
-        invoice_id: result.invoiceId,
-        invoice_number: result.invoiceNumber,
-        total_cents: result.totalCents,
-      });
+      if (result.invoiceId) {
+        summary.invoiced++;
+        summary.invoices.push({
+          subscription_id: result.subscriptionId,
+          invoice_id: result.invoiceId,
+          invoice_number: result.invoiceNumber,
+          total_cents: result.totalCents,
+        });
+      } else {
+        summary.errors.push({
+          subscription_id: result.subscriptionId,
+          error: 'Renewed without generated invoice',
+        });
+      }
     } catch (error) {
       summary.failed++;
       summary.errors.push({
@@ -637,11 +573,55 @@ export async function listSubscriptionsService(organizationId, query) {
  * Create proration invoice helper
  */
 async function createProrationInvoice(organizationId, subscription, newPlan, proration, userId) {
-  // This will be implemented when invoices module is ready
-  logger.info('Proration invoice would be created', {
-    organizationId,
-    subscriptionId: subscription.id,
-    netAmount: proration.netAmountCents,
+  if (!proration.shouldCreateInvoice) {
+    return null;
+  }
+
+  // Credit-note workflow is not implemented yet; only positive proration is invoiced.
+  if (proration.netAmountCents <= 0) {
+    logger.info('Proration resulted in credit/no-charge; invoice not generated', {
+      organizationId,
+      subscriptionId: subscription.id,
+      netAmount: proration.netAmountCents,
+    });
+    return null;
+  }
+
+  const now = new Date();
+
+  return await prisma.$transaction(async (tx) => {
+    const prorationPlan = {
+      id: newPlan.id,
+      name: `${newPlan.name} proration`,
+      currency: newPlan.currency || subscription.plan.currency || 'USD',
+      amount_cents: proration.netAmountCents,
+    };
+
+    const invoice = await generateIssuedInvoiceForPeriod({
+      organizationId,
+      subscriptionId: subscription.id,
+      customerId: subscription.customer_id,
+      customerName: subscription.customer.name,
+      customerEmail: subscription.customer.email,
+      plan: prorationPlan,
+      periodStart: now,
+      periodEnd: subscription.current_period_end,
+      issuedAt: now,
+      createdById: userId,
+      tx,
+      notes: `Proration invoice for immediate change to ${newPlan.name}`,
+    });
+
+    logger.info('Proration invoice generated', {
+      organizationId,
+      subscriptionId: subscription.id,
+      invoiceId: invoice.id,
+      invoiceNumber: invoice.invoice_number,
+      amountCents: invoice.total_cents,
+      userId,
+    });
+
+    return invoice;
   });
 }
 

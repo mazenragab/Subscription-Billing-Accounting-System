@@ -1,4 +1,6 @@
 import { prisma } from '../../config/database.js';
+import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import logger from '../../shared/utils/logger.js';
 import { ValidationError, ForbiddenError } from '../../shared/errors/index.js';
 import {
