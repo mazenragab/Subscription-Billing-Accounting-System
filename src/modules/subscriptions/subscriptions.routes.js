@@ -10,6 +10,7 @@ import {
   downgradeSubscription,
   applyDiscountToSubscription,
   getSubscriptionHistory,
+  runMonthlyInvoicing,
 } from './subscriptions.controller.js';
 import {
   createSubscriptionSchema,
@@ -17,6 +18,7 @@ import {
   changePlanSchema,
   applyDiscountSchema,
   listSubscriptionsSchema,
+  runMonthlyInvoicingSchema,
 } from './subscriptions.schema.js';
 import validateMiddleware from '../../middleware/validate.middleware.js';
 import authMiddleware from '../../middleware/auth.middleware.js';
@@ -36,6 +38,17 @@ router.get(
   '/',
   validateMiddleware({ query: listSubscriptionsSchema }),
   listSubscriptions
+);
+
+/**
+ * @route POST /api/v1/subscriptions/run-monthly-invoicing
+ * @desc Run monthly invoicing simulation (manual cron trigger)
+ * @access Private
+ */
+router.post(
+  '/run-monthly-invoicing',
+  validateMiddleware({ body: runMonthlyInvoicingSchema }),
+  runMonthlyInvoicing
 );
 
 /**

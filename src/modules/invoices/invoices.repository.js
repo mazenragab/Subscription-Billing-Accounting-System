@@ -165,7 +165,7 @@ export async function generateNextInvoiceNumber(organizationId, tx) {
     throw new Error('Billing settings not found for organization');
   }
   
-  const nextSequence = (billingSettings.invoice_sequence || 0) + 1;
+  const nextSequence = BigInt(billingSettings.invoice_sequence ?? 0) + 1n;
   const year = new Date().getFullYear();
   const paddedNumber = String(nextSequence).padStart(6, '0');
   const invoiceNumber = `${billingSettings.invoice_prefix}-${year}-${paddedNumber}`;

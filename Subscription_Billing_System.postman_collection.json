@@ -1,0 +1,2075 @@
+{
+  "info": {
+    "name": "Subscription Billing System",
+    "description": "Multi-tenant subscription billing & accounting system with double-entry bookkeeping",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "apiPrefix",
+      "value": "/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refreshToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "orgId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "customerId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "planId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "subscriptionId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "invoiceId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "paymentId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "discountCodeId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "webhookId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "System",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register - Create Organization",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"Test1234!\",\n  \"name\": \"Admin User\",\n  \"organizationName\": \"My Company\",\n  \"organizationSlug\": \"my-company\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "auth", "register"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"Test1234!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "auth", "login"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/auth/refresh",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "auth", "refresh"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/auth/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "auth", "logout"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Current User",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "auth", "me"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"Test1234!\",\n  \"newPassword\": \"NewPass1234!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/auth/change-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "auth", "change-password"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Forgot Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/auth/forgot-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "auth", "forgot-password"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"reset-token-from-email\",\n  \"newPassword\": \"NewPass1234!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/auth/reset-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "auth", "reset-password"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Organizations",
+      "item": [
+        {
+          "name": "Get Current Organization",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/organizations/current",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "organizations", "current"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Current Organization",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Company Name\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/organizations/current",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "organizations", "current"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Billing Settings",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/organizations/current/billing-settings",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "organizations", "current", "billing-settings"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Billing Settings",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"invoice_prefix\": \"INV\",\n  \"payment_terms_days\": 30,\n  \"tax_rate_bps\": 0,\n  \"dunning_enabled\": true,\n  \"dunning_retry_days\": [3, 7, 14]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/organizations/current/billing-settings",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "organizations", "current", "billing-settings"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Members",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/organizations/current/members?limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "organizations", "current", "members"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Invite User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"role\": \"ADMIN\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/organizations/current/members",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "organizations", "current", "members"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Remove Member",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/organizations/current/members/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "organizations", "current", "members", "{{userId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Organization Stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/organizations/current/stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "organizations", "current", "stats"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Transfer Ownership",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"newOwnerUserId\": \"user-uuid\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/organizations/current/transfer-ownership",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "organizations", "current", "transfer-ownership"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Customers",
+      "item": [
+        {
+          "name": "List Customers",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/customers?limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "customers"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Customer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Doe\",\n  \"email\": \"john@example.com\",\n  \"phone\": \"+1-555-123-4567\",\n  \"external_id\": \"cust_001\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/customers",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "customers"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Customer",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/customers/{{customerId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "customers", "{{customerId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Customer",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Updated\",\n  \"phone\": \"+1-555-987-6543\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/customers/{{customerId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "customers", "{{customerId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Customer",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/customers/{{customerId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "customers", "{{customerId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Customer Billing Info",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/customers/{{customerId}}/billing-info",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "customers", "{{customerId}}", "billing-info"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Customer Billing Info",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"billing_name\": \"John Doe\",\n  \"billing_email\": \"billing@example.com\",\n  \"address_line1\": \"123 Main St\",\n  \"city\": \"New York\",\n  \"state\": \"NY\",\n  \"postal_code\": \"10001\",\n  \"country_code\": \"US\",\n  \"tax_id\": \"123456789\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/customers/{{customerId}}/billing-info",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "customers", "{{customerId}}", "billing-info"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Customer Subscriptions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/customers/{{customerId}}/subscriptions",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "customers", "{{customerId}}", "subscriptions"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Customer Invoices",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/customers/{{customerId}}/invoices",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "customers", "{{customerId}}", "invoices"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Customer Payments",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/customers/{{customerId}}/payments",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "customers", "{{customerId}}", "payments"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Plans",
+      "item": [
+        {
+          "name": "List Plans",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/plans?limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "plans"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Public Plans",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/plans/public",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "plans", "public"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Plan",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Premium Plan\",\n  \"description\": \"Our premium subscription\",\n  \"amount_cents\": 19900,\n  \"currency\": \"USD\",\n  \"interval\": \"MONTHLY\",\n  \"trial_days\": 14,\n  \"is_active\": true,\n  \"is_public\": true,\n  \"sort_order\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/plans",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "plans"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Plan",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/plans/{{planId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "plans", "{{planId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Plan",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Premium Plus Plan\",\n  \"amount_cents\": 29900\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/plans/{{planId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "plans", "{{planId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Plan",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/plans/{{planId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "plans", "{{planId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Plan Features",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/plans/{{planId}}/features",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "plans", "{{planId}}", "features"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Add Plan Feature",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"feature_key\": \"max_users\",\n  \"feature_value\": \"50\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/plans/{{planId}}/features",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "plans", "{{planId}}", "features"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Plan Feature",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/plans/{{planId}}/features/{{featureKey}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "plans", "{{planId}}", "features", "{{featureKey}}"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Subscriptions",
+      "item": [
+        {
+          "name": "List Subscriptions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/subscriptions?limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "subscriptions"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Subscription",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customer_id\": \"{{customerId}}\",\n  \"plan_id\": \"{{planId}}\",\n  \"billing_anchor_day\": 15\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/subscriptions",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "subscriptions"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Subscription",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/subscriptions/{{subscriptionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "subscriptions", "{{subscriptionId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Subscription History",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/subscriptions/{{subscriptionId}}/history",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "subscriptions", "{{subscriptionId}}", "history"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Cancel Subscription",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"immediate\": false,\n  \"cancellation_reason\": \"Too expensive\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/subscriptions/{{subscriptionId}}/cancel",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "subscriptions", "{{subscriptionId}}", "cancel"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Pause Subscription",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/subscriptions/{{subscriptionId}}/pause",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "subscriptions", "{{subscriptionId}}", "pause"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Resume Subscription",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/subscriptions/{{subscriptionId}}/resume",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "subscriptions", "{{subscriptionId}}", "resume"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Upgrade Plan",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"new_plan_id\": \"new-plan-uuid\",\n  \"immediate\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/subscriptions/{{subscriptionId}}/upgrade",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "subscriptions", "{{subscriptionId}}", "upgrade"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Downgrade Plan",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"new_plan_id\": \"new-plan-uuid\",\n  \"immediate\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/subscriptions/{{subscriptionId}}/downgrade",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "subscriptions", "{{subscriptionId}}", "downgrade"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Apply Discount",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"discount_code\": \"SAVE20\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/subscriptions/{{subscriptionId}}/apply-discount",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "subscriptions", "{{subscriptionId}}", "apply-discount"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Invoices",
+      "item": [
+        {
+          "name": "List Invoices",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/invoices?limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "invoices"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Draft Invoice",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customer_id\": \"{{customerId}}\",\n  \"subscription_id\": \"{{subscriptionId}}\",\n  \"period_start\": \"2024-01-01\",\n  \"period_end\": \"2024-01-31\",\n  \"line_items\": [\n    {\n      \"description\": \"Monthly subscription\",\n      \"quantity\": 1,\n      \"unit_amount_cents\": 9900,\n      \"amount_cents\": 9900\n    }\n  ],\n  \"notes\": \"Test invoice\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/invoices",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "invoices"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Invoice",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/invoices/{{invoiceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "invoices", "{{invoiceId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Issue Invoice",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"issued_at\": \"2024-01-15T10:00:00Z\",\n  \"due_at\": \"2024-02-14T10:00:00Z\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/invoices/{{invoiceId}}/issue",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "invoices", "{{invoiceId}}", "issue"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Void Invoice",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/invoices/{{invoiceId}}/void",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "invoices", "{{invoiceId}}", "void"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Mark Invoice Uncollectible",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/invoices/{{invoiceId}}/mark-uncollectible",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "invoices", "{{invoiceId}}", "mark-uncollectible"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Record Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount_cents\": 9900,\n  \"method\": \"CREDIT_CARD\",\n  \"reference\": \"txn_123456\",\n  \"idempotency_key\": \"unique-key-123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/invoices/{{invoiceId}}/payments",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "invoices", "{{invoiceId}}", "payments"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Invoice Payments",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/invoices/{{invoiceId}}/payments",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "invoices", "{{invoiceId}}", "payments"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Invoice Journal Entries",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/invoices/{{invoiceId}}/journal-entries",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "invoices", "{{invoiceId}}", "journal-entries"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Payments",
+      "item": [
+        {
+          "name": "List All Payments",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/payments?limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "payments"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Payment Statistics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/payments/stats?from_date=2024-01-01&to_date=2024-12-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "payments", "stats"],
+              "query": [
+                {
+                  "key": "from_date",
+                  "value": "2024-01-01"
+                },
+                {
+                  "key": "to_date",
+                  "value": "2024-12-31"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Payment by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/payments/{{paymentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "payments", "{{paymentId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Payment Attempts for Invoice",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/invoices/{{invoiceId}}/payment-attempts",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "invoices", "{{invoiceId}}", "payment-attempts"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Save Payment Method",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"CREDIT_CARD\",\n  \"last4\": \"4242\",\n  \"expiry_month\": 12,\n  \"expiry_year\": 2026,\n  \"holder_name\": \"John Doe\",\n  \"is_default\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/customers/{{customerId}}/payment-methods",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "customers", "{{customerId}}", "payment-methods"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Customer Payment Methods",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/customers/{{customerId}}/payment-methods",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "customers", "{{customerId}}", "payment-methods"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Payment Method",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/customers/{{customerId}}/payment-methods/{{paymentMethodId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "customers", "{{customerId}}", "payment-methods", "{{paymentMethodId}}"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Discount Codes",
+      "item": [
+        {
+          "name": "List Discount Codes",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/discount-codes?limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "discount-codes"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Discount Code Statistics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/discount-codes/stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "discount-codes", "stats"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Validate Discount Code",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/discount-codes/validate/SAVE20",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "discount-codes", "validate", "SAVE20"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Discount Code",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"SUMMER20\",\n  \"type\": \"PERCENTAGE\",\n  \"value\": 2000,\n  \"max_uses\": 100,\n  \"valid_from\": \"2024-06-01T00:00:00Z\",\n  \"valid_until\": \"2024-09-01T00:00:00Z\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/discount-codes",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "discount-codes"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Discount Code",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/discount-codes/{{discountCodeId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "discount-codes", "{{discountCodeId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Discount Code",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"max_uses\": 200,\n  \"is_active\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/discount-codes/{{discountCodeId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "discount-codes", "{{discountCodeId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Discount Code",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/discount-codes/{{discountCodeId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "discount-codes", "{{discountCodeId}}"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Reports",
+      "item": [
+        {
+          "name": "Income Statement",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/reports/income-statement?from_date=2024-01-01&to_date=2024-12-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "reports", "income-statement"],
+              "query": [
+                {
+                  "key": "from_date",
+                  "value": "2024-01-01"
+                },
+                {
+                  "key": "to_date",
+                  "value": "2024-12-31"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Balance Sheet",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/reports/balance-sheet?as_of_date=2024-12-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "reports", "balance-sheet"],
+              "query": [
+                {
+                  "key": "as_of_date",
+                  "value": "2024-12-31"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "AR Aging",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/reports/ar-aging?as_of_date=2024-12-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "reports", "ar-aging"],
+              "query": [
+                {
+                  "key": "as_of_date",
+                  "value": "2024-12-31"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Deferred Revenue Waterfall",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/reports/deferred-revenue-waterfall?from_date=2024-01-01&to_date=2024-12-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "reports", "deferred-revenue-waterfall"],
+              "query": [
+                {
+                  "key": "from_date",
+                  "value": "2024-01-01"
+                },
+                {
+                  "key": "to_date",
+                  "value": "2024-12-31"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "MRR Report",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/reports/mrr?as_of_date=2024-12-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "reports", "mrr"],
+              "query": [
+                {
+                  "key": "as_of_date",
+                  "value": "2024-12-31"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Churn Report",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/reports/churn?from_date=2024-01-01&to_date=2024-12-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "reports", "churn"],
+              "query": [
+                {
+                  "key": "from_date",
+                  "value": "2024-01-01"
+                },
+                {
+                  "key": "to_date",
+                  "value": "2024-12-31"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Trial Balance",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/reports/trial-balance?from_date=2024-01-01&to_date=2024-12-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "reports", "trial-balance"],
+              "query": [
+                {
+                  "key": "from_date",
+                  "value": "2024-01-01"
+                },
+                {
+                  "key": "to_date",
+                  "value": "2024-12-31"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Webhooks",
+      "item": [
+        {
+          "name": "List Webhook Endpoints",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/webhooks",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "webhooks"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Webhook Endpoint",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"url\": \"https://webhook.site/your-unique-url\",\n  \"events\": [\"invoice.paid\", \"subscription.cancelled\"],\n  \"secret\": \"optional-custom-secret-min-32-chars\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/webhooks",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "webhooks"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Webhook Endpoint",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/webhooks/{{webhookId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "webhooks", "{{webhookId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Webhook Endpoint",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"url\": \"https://new-url.com/webhook\",\n  \"is_active\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/webhooks/{{webhookId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "webhooks", "{{webhookId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Webhook Endpoint",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/webhooks/{{webhookId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "webhooks", "{{webhookId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Regenerate Webhook Secret",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/webhooks/{{webhookId}}/regenerate-secret",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "webhooks", "{{webhookId}}", "regenerate-secret"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Webhook Events",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/webhooks/{{webhookId}}/events?limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "webhooks", "{{webhookId}}", "events"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Send Test Webhook",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/webhooks/{{webhookId}}/test",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "webhooks", "{{webhookId}}", "test"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Resend Failed Webhook Event",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/webhooks/events/{{eventId}}/resend",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "webhooks", "events", "{{eventId}}", "resend"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Accounting",
+      "item": [
+        {
+          "name": "Run Revenue Recognition",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"period_month\": \"2024-01-01\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/accounting/recognize",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "accounting", "recognize"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Journal Entries",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/accounting/journal-entries?limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "accounting", "journal-entries"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Journal Entry by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/accounting/journal-entries/{{journalEntryId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "accounting", "journal-entries", "{{journalEntryId}}"]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

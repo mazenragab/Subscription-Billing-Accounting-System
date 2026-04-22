@@ -2,7 +2,7 @@ import { prisma } from '../config/database.js';
 import redis from '../config/redis.js';
 import logger from '../shared/utils/logger.js';
 import { NotFoundError, AccountingError } from '../shared/errors/index.js';
-import { ACCOUNT_CODES } from './accounting.constants.js';
+import { SYSTEM_ACCOUNTS } from './accounting.constants.js';
 
 const CACHE_TTL = 300; // 5 minutes
 const CACHE_KEY_PREFIX = 'account:';

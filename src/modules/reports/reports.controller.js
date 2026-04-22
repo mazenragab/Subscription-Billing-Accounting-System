@@ -6,6 +6,7 @@ import {
   getDeferredRevenueWaterfallReport,
   getMRRReport,
   getChurnReportService,
+  runRevenueRecognitionService,
 } from './reports.service.js';
 
 /**
@@ -146,6 +147,26 @@ export async function getChurn(req, res, next) {
   }
 }
 
+/**
+ * Run manual month-end revenue recognition
+ */
+export async function runRevenueRecognition(req, res, next) {
+  try {
+    const organizationId = req.tenantId;
+    const userId = req.user.userId;
+    const data = req.body;
+
+    const result = await runRevenueRecognitionService(organizationId, data, userId);
+
+    res.status(200).json({
+      success: true,
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
 export default {
   getTrialBalance,
   getIncomeStatement,
@@ -154,4 +175,5 @@ export default {
   getDeferredRevenueWaterfall,
   getMRR,
   getChurn,
+  runRevenueRecognition,
 };

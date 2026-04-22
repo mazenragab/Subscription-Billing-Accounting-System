@@ -40,10 +40,17 @@ export const listSubscriptionsSchema = Joi.object({
   search: Joi.string().max(100).optional(),
 });
 
+// Manual monthly invoicing simulation schema
+export const runMonthlyInvoicingSchema = Joi.object({
+  as_of_date: Joi.date().iso().optional(),
+  limit: Joi.number().integer().min(1).max(500).default(100),
+});
+
 export default {
   createSubscriptionSchema,
   cancelSubscriptionSchema,
   changePlanSchema,
   applyDiscountSchema,
   listSubscriptionsSchema,
+  runMonthlyInvoicingSchema,
 };

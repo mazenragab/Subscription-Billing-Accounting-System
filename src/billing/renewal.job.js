@@ -78,9 +78,13 @@ export async function cancelRenewal(subscriptionId) {
  * Process subscription renewal
  * @param {string} subscriptionId - Subscription ID
  * @param {Object} tx - Prisma transaction client (optional)
+ * @param {Object} options - Renewal options
+ * @param {Date} options.effectiveDate - Date used to determine whether renewal is due
  * @returns {Promise<Object>} Renewal result
  */
-export async function processRenewal(subscriptionId, tx = prisma) {
+export async function processRenewal(subscriptionId, tx = prisma, options = {}) {
+  const effectiveDate = options.effectiveDate || new Date();
+
   const subscription = await tx.subscription.findUnique({
     where: { id: subscriptionId },
     include: {
@@ -109,11 +113,11 @@ export async function processRenewal(subscriptionId, tx = prisma) {
   }
   
   // Check if renewal is due
-  const now = new Date();
-  if (subscription.current_period_end > now) {
+  if (subscription.current_period_end > effectiveDate) {
     logger.info('Renewal not yet due', {
       subscriptionId,
       periodEnd: subscription.current_period_end,
+      effectiveDate,
     });
     return { renewed: false, reason: 'Renewal not yet due' };
   }
@@ -166,6 +170,7 @@ export async function processRenewal(subscriptionId, tx = prisma) {
   return {
     renewed: true,
     subscription: updatedSubscription,
+    customer: subscription.customer,
     periodStart,
     periodEnd,
     plan,
