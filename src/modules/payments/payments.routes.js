@@ -20,6 +20,7 @@ import validateMiddleware from '../../middleware/validate.middleware.js';
 import authMiddleware from '../../middleware/auth.middleware.js';
 import tenantMiddleware from '../../middleware/tenant.middleware.js';
 import { idempotencyRateLimiter } from '../../middleware/rateLimiter.middleware.js';
+import { requireRoles } from '../../middleware/role.middleware.js';
 
 const router = express.Router();
 
@@ -49,7 +50,7 @@ router.get('/stats', getPaymentStats);
  * @desc Simulate payment webhook (testing)
  * @access Private
  */
-router.post('/webhook', paymentWebhook);
+router.post('/webhook', requireRoles(['OWNER', 'ADMIN', 'BILLING_MANAGER']), paymentWebhook);
 
 /**
  * @route GET /api/v1/customers/:customerId/payments/summary
@@ -72,6 +73,7 @@ router.get('/customers/:customerId/payment-methods', getCustomerPaymentMethods);
  */
 router.post(
   '/customers/:customerId/payment-methods',
+  requireRoles(['OWNER', 'ADMIN', 'BILLING_MANAGER']),
   validateMiddleware({ body: savePaymentMethodSchema }),
   savePaymentMethod
 );
@@ -81,7 +83,11 @@ router.post(
  * @desc Delete payment method
  * @access Private
  */
-router.delete('/customers/:customerId/payment-methods/:paymentMethodId', deletePaymentMethod);
+router.delete(
+  '/customers/:customerId/payment-methods/:paymentMethodId',
+  requireRoles(['OWNER', 'ADMIN', 'BILLING_MANAGER']),
+  deletePaymentMethod
+);
 
 /**
  * @route GET /api/v1/invoices/:invoiceId/payment-attempts
@@ -97,6 +103,7 @@ router.get('/invoices/:invoiceId/payment-attempts', getPaymentAttempts);
  */
 router.post(
   '/invoices/:invoiceId/payments',
+  requireRoles(['OWNER', 'ADMIN', 'BILLING_MANAGER']),
   idempotencyRateLimiter,
   validateMiddleware({ body: recordPaymentSchema }),
   processPaymentController

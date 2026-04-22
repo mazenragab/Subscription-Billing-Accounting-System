@@ -22,6 +22,7 @@ import validateMiddleware from '../../middleware/validate.middleware.js';
 import authMiddleware from '../../middleware/auth.middleware.js';
 import tenantMiddleware from '../../middleware/tenant.middleware.js';
 import { idempotencyRateLimiter } from '../../middleware/rateLimiter.middleware.js';
+import { requireRoles } from '../../middleware/role.middleware.js';
 
 const router = express.Router();
 
@@ -46,6 +47,7 @@ router.get(
  */
 router.post(
   '/',
+  requireRoles(['OWNER', 'ADMIN', 'BILLING_MANAGER']),
   validateMiddleware({ body: createInvoiceSchema }),
   createDraftInvoice
 );
@@ -71,6 +73,7 @@ router.get('/payments/:paymentId', getPayment);
  */
 router.post(
   '/:id/issue',
+  requireRoles(['OWNER', 'ADMIN', 'BILLING_MANAGER']),
   validateMiddleware({ body: issueInvoiceSchema }),
   issueInvoice
 );
@@ -80,14 +83,18 @@ router.post(
  * @desc Void invoice
  * @access Private
  */
-router.post('/:id/void', voidInvoice);
+router.post('/:id/void', requireRoles(['OWNER', 'ADMIN', 'BILLING_MANAGER']), voidInvoice);
 
 /**
  * @route POST /api/v1/invoices/:id/mark-uncollectible
  * @desc Mark invoice as uncollectible
  * @access Private
  */
-router.post('/:id/mark-uncollectible', markUncollectible);
+router.post(
+  '/:id/mark-uncollectible',
+  requireRoles(['OWNER', 'ADMIN', 'BILLING_MANAGER']),
+  markUncollectible
+);
 
 /**
  * @route POST /api/v1/invoices/:id/payments
@@ -96,6 +103,7 @@ router.post('/:id/mark-uncollectible', markUncollectible);
  */
 router.post(
   '/:id/payments',
+  requireRoles(['OWNER', 'ADMIN', 'BILLING_MANAGER']),
   idempotencyRateLimiter,
   validateMiddleware({ body: recordPaymentSchema }),
   recordPayment

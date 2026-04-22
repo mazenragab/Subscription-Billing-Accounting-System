@@ -39,6 +39,10 @@ export async function createDraftInvoice(organizationId, data, userId) {
   
   // Verify subscription exists
   const subscription = await getSubscriptionById(organizationId, data.subscription_id);
+
+  if (subscription.customer_id !== data.customer_id) {
+    throw new ValidationError('Subscription does not belong to the provided customer');
+  }
   
   // Calculate totals
   let subtotalCents = 0;
@@ -227,8 +231,15 @@ export async function markInvoiceUncollectible(organizationId, invoiceId, userId
     throw new ValidationError(`Cannot mark invoice as uncollectible with status: ${invoice.status}`);
   }
   
-  const updatedInvoice = await updateInvoiceStatus(invoiceId, 'UNCOLLECTIBLE', {
-    voided_at: new Date(),
+  const updatedInvoice = await prisma.$transaction(async (tx) => {
+    return await updateInvoiceStatus(
+      invoiceId,
+      'UNCOLLECTIBLE',
+      {
+        voided_at: new Date(),
+      },
+      tx
+    );
   });
   
   logger.info('Invoice marked as uncollectible', {

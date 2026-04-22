@@ -20,6 +20,7 @@ import {
 import validateMiddleware from '../../middleware/validate.middleware.js';
 import authMiddleware from '../../middleware/auth.middleware.js';
 import tenantMiddleware from '../../middleware/tenant.middleware.js';
+import { requireRoles } from '../../middleware/role.middleware.js';
 
 const router = express.Router();
 
@@ -51,6 +52,7 @@ router.get('/public', getPublicPlans);
  */
 router.post(
   '/',
+  requireRoles(['OWNER', 'ADMIN']),
   validateMiddleware({ body: createPlanSchema }),
   createPlan
 );
@@ -69,6 +71,7 @@ router.get('/:id', getPlanById);
  */
 router.patch(
   '/:id',
+  requireRoles(['OWNER', 'ADMIN']),
   validateMiddleware({ body: updatePlanSchema }),
   updatePlan
 );
@@ -78,7 +81,7 @@ router.patch(
  * @desc Soft delete plan
  * @access Private (OWNER, ADMIN)
  */
-router.delete('/:id', deletePlan);
+router.delete('/:id', requireRoles(['OWNER', 'ADMIN']), deletePlan);
 
 /**
  * @route GET /api/v1/plans/:id/features
@@ -94,6 +97,7 @@ router.get('/:id/features', getPlanFeatures);
  */
 router.post(
   '/:id/features',
+  requireRoles(['OWNER', 'ADMIN']),
   validateMiddleware({ body: createPlanFeatureSchema }),
   createPlanFeature
 );
@@ -105,6 +109,7 @@ router.post(
  */
 router.patch(
   '/:id/features/:featureKey',
+  requireRoles(['OWNER', 'ADMIN']),
   validateMiddleware({ body: createPlanFeatureSchema }),
   updatePlanFeature
 );
@@ -114,6 +119,6 @@ router.patch(
  * @desc Delete plan feature
  * @access Private (OWNER, ADMIN)
  */
-router.delete('/:id/features/:featureKey', deletePlanFeature);
+router.delete('/:id/features/:featureKey', requireRoles(['OWNER', 'ADMIN']), deletePlanFeature);
 
 export default router;

@@ -4,6 +4,7 @@ import { recognizeRevenueSchema } from './accounting.schema.js';
 import validateMiddleware from '../../middleware/validate.middleware.js';
 import authMiddleware from '../../middleware/auth.middleware.js';
 import tenantMiddleware from '../../middleware/tenant.middleware.js';
+import { requireRoles } from '../../middleware/role.middleware.js';
 
 const router = express.Router();
 
@@ -16,6 +17,7 @@ router.use(authMiddleware, tenantMiddleware);
  */
 router.post(
   '/recognize-revenue',
+  requireRoles(['OWNER', 'ADMIN', 'BILLING_MANAGER']),
   validateMiddleware({ body: recognizeRevenueSchema }),
   recognizeRevenue
 );
