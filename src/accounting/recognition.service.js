@@ -119,22 +119,6 @@ export async function processRecognition({ organizationId, periodMonth, createdB
     
     for (const schedule of schedules) {
       try {
-        // Verify invoice is paid
-        const invoice = await tx.invoice.findUnique({
-          where: { id: schedule.invoice_id },
-          select: { status: true },
-        });
-        
-        if (!invoice || invoice.status !== 'PAID') {
-          // Skip if invoice not paid
-          await tx.revenueRecognitionSchedule.update({
-            where: { id: schedule.id },
-            data: { status: RECOGNITION_STATUS.SKIPPED },
-          });
-          result.skipped++;
-          continue;
-        }
-        
         // Create journal entry for recognition
         const journalEntry = await createRecognitionJournalEntry({
           organizationId,
@@ -193,10 +177,11 @@ async function getPendingSchedules(organizationId, periodMonth, tx) {
   const schedules = await tx.$queryRaw`
     SELECT rrs.id, rrs.invoice_id, rrs.amount_cents, rrs.subscription_id
     FROM revenue_recognition_schedules rrs
-    JOIN invoices i ON i.id = rrs.invoice_id AND i.status = 'PAID'
+    JOIN invoices i ON i.id = rrs.invoice_id
     WHERE rrs.organization_id = ${organizationId}
       AND rrs.period_month = ${periodMonth}
       AND rrs.status = ${RECOGNITION_STATUS.PENDING}
+      AND i.status IN ('ISSUED', 'PAID')
     ORDER BY rrs.id
     FOR UPDATE SKIP LOCKED
     LIMIT ${BATCH_SIZE}

@@ -120,9 +120,10 @@ async function getOrganizationsWithPendingSchedules(periodMonth) {
   const results = await prisma.$queryRaw`
     SELECT DISTINCT rrs.organization_id as id
     FROM revenue_recognition_schedules rrs
-    JOIN invoices i ON i.id = rrs.invoice_id AND i.status = 'PAID'
+    JOIN invoices i ON i.id = rrs.invoice_id
     WHERE rrs.period_month = ${periodMonth}
       AND rrs.status = 'PENDING'
+      AND i.status IN ('ISSUED', 'PAID')
     LIMIT 1000
   `;
   
