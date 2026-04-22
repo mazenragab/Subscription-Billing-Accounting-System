@@ -2,7 +2,7 @@ import { prisma } from '../config/database.js';
 import logger from '../shared/utils/logger.js';
 import Money from '../shared/utils/money.js';
 import { getPeriodMonth } from '../shared/utils/date.js';
-import { AccountingError } from '../shared/errors/index.js';
+import { AccountingError, NotFoundError } from '../shared/errors/index.js';
 import { verifyAccounts } from './accounts.service.js';
 import { 
   JOURNAL_SOURCE_TYPES, 
@@ -90,7 +90,7 @@ export async function createJournalEntry({
   logger.info('Journal entry created', {
     organizationId,
     entryId: journalEntry.id,
-    entryNumber,
+    entryNumber: entryNumber.toString(),
     sourceType,
     sourceId,
     totalDebits,
@@ -210,7 +210,7 @@ async function getNextEntryNumber(organizationId, tx) {
   }
   
   // Increment and get next number
-  const nextNumber = (billingSettings.journal_sequence || 0) + 1;
+  const nextNumber = BigInt(billingSettings.journal_sequence ?? 0) + 1n;
   
   // Update the sequence
   await tx.billingSettings.update({
@@ -386,12 +386,18 @@ export async function createReversalJournalEntry({
     tx,
   });
   
-  // Mark original entry as reversed
+  // Link the reversal to its source and mark the original as reversed.
+  await tx.journalEntry.update({
+    where: { id: reversalEntry.id },
+    data: {
+      reversal_of_id: originalEntryId,
+    },
+  });
+
   await tx.journalEntry.update({
     where: { id: originalEntryId },
     data: {
       status: JOURNAL_STATUS.REVERSED,
-      reversed_by_id: reversalEntry.id,
     },
   });
   

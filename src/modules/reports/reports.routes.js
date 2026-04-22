@@ -7,14 +7,17 @@ import {
   getDeferredRevenueWaterfall,
   getMRR,
   getChurn,
+  runRevenueRecognition,
 } from './reports.controller.js';
 import {
+  trialBalanceSchema,
   incomeStatementSchema,
   balanceSheetSchema,
   arAgingSchema,
   deferredRevenueWaterfallSchema,
   mrrReportSchema,
   churnReportSchema,
+  runRevenueRecognitionSchema,
 } from './reports.schema.js';
 import validateMiddleware from '../../middleware/validate.middleware.js';
 import authMiddleware from '../../middleware/auth.middleware.js';
@@ -32,7 +35,7 @@ router.use(authMiddleware, tenantMiddleware);
  */
 router.get(
   '/trial-balance',
-  validateMiddleware({ query: incomeStatementSchema }),
+  validateMiddleware({ query: trialBalanceSchema }),
   getTrialBalance
 );
 
@@ -100,6 +103,17 @@ router.get(
   '/churn',
   validateMiddleware({ query: churnReportSchema }),
   getChurn
+);
+
+/**
+ * @route POST /api/v1/reports/revenue-recognition/run
+ * @desc Run manual month-end revenue recognition for this tenant
+ * @access Private
+ */
+router.post(
+  '/revenue-recognition/run',
+  validateMiddleware({ body: runRevenueRecognitionSchema }),
+  runRevenueRecognition
 );
 
 export default router;

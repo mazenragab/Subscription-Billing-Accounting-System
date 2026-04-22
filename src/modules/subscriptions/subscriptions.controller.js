@@ -8,6 +8,7 @@ import {
   getSubscriptionWithAmountsService,
   getSubscriptionHistoryService,
   listSubscriptionsService,
+  runMonthlyInvoicingService,
 } from './subscriptions.service.js';
 
 /**
@@ -29,6 +30,26 @@ export async function listSubscriptions(req, res, next) {
       success: true,
       data: result.data,
       pagination: result.pagination,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * Run monthly invoicing simulation (manual cron trigger)
+ */
+export async function runMonthlyInvoicing(req, res, next) {
+  try {
+    const organizationId = req.tenantId;
+    const userId = req.user.userId;
+    const data = req.body;
+
+    const result = await runMonthlyInvoicingService(organizationId, data, userId);
+
+    res.status(200).json({
+      success: true,
+      data: result,
     });
   } catch (error) {
     next(error);
@@ -228,4 +249,5 @@ export default {
   downgradeSubscription,
   applyDiscountToSubscription,
   getSubscriptionHistory,
+  runMonthlyInvoicing,
 };

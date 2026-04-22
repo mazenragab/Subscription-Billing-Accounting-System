@@ -2,7 +2,10 @@ import { prisma } from '../../config/database.js';
 import logger from '../../shared/utils/logger.js';
 import { getSafeAnchorDay, calculateInitialPeriod, calculateNextPeriod } from '../../billing/billing-cycle.service.js';
 import { calculateImmediateProration } from '../../billing/proration.service.js';
-import { scheduleRenewal, cancelRenewal } from '../../billing/renewal.job.js';
+import { scheduleRenewal, cancelRenewal, processRenewal } from '../../billing/renewal.job.js';
+import { createInvoice, generateNextInvoiceNumber, updateInvoiceStatus } from '../invoices/invoices.repository.js';
+import { createInvoiceJournalEntry } from '../../accounting/journal.service.js';
+import { createRecognitionSchedules } from '../../accounting/recognition.service.js';
 import { ValidationError, InvalidTransitionError } from '../../shared/errors/index.js';
 import {
   getSubscriptionById,
@@ -121,6 +124,180 @@ export async function createSubscriptionService(organizationId, data, userId) {
   });
   
   return subscription;
+}
+
+/**
+ * Run monthly invoicing simulation (manual cron trigger).
+ * For each due subscription: renew period, create and issue invoice, then seed recognition schedules.
+ * @param {string} organizationId - Organization ID
+ * @param {Object} data - Execution data
+ * @param {string} userId - User ID triggering the run
+ * @returns {Promise<Object>} Run summary
+ */
+export async function runMonthlyInvoicingService(organizationId, data, userId) {
+  const asOfDate = data?.as_of_date ? new Date(data.as_of_date) : new Date();
+  const limit = data?.limit || 100;
+
+  const dueSubscriptions = await prisma.subscription.findMany({
+    where: {
+      organization_id: organizationId,
+      status: { in: ['ACTIVE', 'TRIALING'] },
+      cancel_at_period_end: false,
+      current_period_end: { lte: asOfDate },
+    },
+    select: { id: true },
+    orderBy: { current_period_end: 'asc' },
+    take: limit,
+  });
+
+  const summary = {
+    as_of_date: asOfDate,
+    processed: dueSubscriptions.length,
+    renewed: 0,
+    invoiced: 0,
+    skipped: 0,
+    failed: 0,
+    invoices: [],
+    errors: [],
+  };
+
+  for (const dueSubscription of dueSubscriptions) {
+    try {
+      const result = await prisma.$transaction(async (tx) => {
+        const renewalResult = await processRenewal(
+          dueSubscription.id,
+          tx,
+          { effectiveDate: asOfDate }
+        );
+
+        if (!renewalResult.renewed) {
+          return {
+            renewed: false,
+            reason: renewalResult.reason,
+            subscriptionId: dueSubscription.id,
+          };
+        }
+
+        const subtotalCents = renewalResult.plan.amount_cents;
+        const invoiceNumber = await generateNextInvoiceNumber(organizationId, tx);
+        const billingSettings = await tx.billingSettings.findUnique({
+          where: { organization_id: organizationId },
+          select: { payment_terms_days: true },
+        });
+
+        const issuedAt = new Date(asOfDate);
+        const paymentTermsDays = billingSettings?.payment_terms_days || 30;
+        const dueAt = new Date(issuedAt.getTime() + (paymentTermsDays * 24 * 60 * 60 * 1000));
+
+        const lineItemDescription = `Subscription ${renewalResult.plan.name} (${renewalResult.periodStart.toISOString().slice(0, 10)} to ${renewalResult.periodEnd.toISOString().slice(0, 10)})`;
+
+        const invoice = await createInvoice(
+          organizationId,
+          {
+            customer_id: renewalResult.customer.id,
+            subscription_id: renewalResult.subscription.id,
+            invoice_number: invoiceNumber,
+            subtotal_cents: subtotalCents,
+            discount_cents: 0,
+            tax_cents: 0,
+            total_cents: subtotalCents,
+            currency: renewalResult.plan.currency || 'USD',
+            period_start: renewalResult.periodStart,
+            period_end: renewalResult.periodEnd,
+            customer_name: renewalResult.customer.name,
+            customer_email: renewalResult.customer.email,
+            notes: 'Auto-generated from monthly renewal run',
+          },
+          [
+            {
+              description: lineItemDescription,
+              quantity: 1,
+              unit_amount_cents: subtotalCents,
+              amount_cents: subtotalCents,
+              plan_id: renewalResult.plan.id,
+              plan_name: renewalResult.plan.name,
+              period_start: renewalResult.periodStart,
+              period_end: renewalResult.periodEnd,
+            },
+          ],
+          tx
+        );
+
+        const issuedInvoice = await updateInvoiceStatus(
+          invoice.id,
+          'ISSUED',
+          {
+            invoice_number: invoiceNumber,
+            issued_at: issuedAt,
+            due_at: dueAt,
+          },
+          tx
+        );
+
+        await createInvoiceJournalEntry({
+          organizationId,
+          invoiceId: invoice.id,
+          totalCents: invoice.total_cents,
+          createdById: userId,
+          tx,
+        });
+
+        await createRecognitionSchedules({
+          organizationId,
+          invoiceId: invoice.id,
+          subscriptionId: renewalResult.subscription.id,
+          periodStart: renewalResult.periodStart,
+          periodEnd: renewalResult.periodEnd,
+          totalCents: invoice.total_cents,
+          tx,
+        });
+
+        return {
+          renewed: true,
+          subscriptionId: renewalResult.subscription.id,
+          invoiceId: issuedInvoice.id,
+          invoiceNumber: issuedInvoice.invoice_number,
+          totalCents: issuedInvoice.total_cents,
+        };
+      });
+
+      if (!result.renewed) {
+        summary.skipped++;
+        continue;
+      }
+
+      summary.renewed++;
+      summary.invoiced++;
+      summary.invoices.push({
+        subscription_id: result.subscriptionId,
+        invoice_id: result.invoiceId,
+        invoice_number: result.invoiceNumber,
+        total_cents: result.totalCents,
+      });
+    } catch (error) {
+      summary.failed++;
+      summary.errors.push({
+        subscription_id: dueSubscription.id,
+        error: error.message,
+      });
+
+      logger.error('Monthly invoicing failed for subscription', {
+        organizationId,
+        subscriptionId: dueSubscription.id,
+        error: error.message,
+      });
+    }
+  }
+
+  logger.info('Monthly invoicing run completed', {
+    organizationId,
+    asOfDate,
+    ...summary,
+    invoicesCount: summary.invoices.length,
+    errorsCount: summary.errors.length,
+  });
+
+  return summary;
 }
 
 /**
@@ -478,5 +655,6 @@ export default {
   getSubscriptionWithAmountsService,
   getSubscriptionHistoryService,
   listSubscriptionsService,
+  runMonthlyInvoicingService,
   validateTransition,
 };

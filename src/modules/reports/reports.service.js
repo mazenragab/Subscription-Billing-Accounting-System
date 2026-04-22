@@ -1,5 +1,7 @@
 import logger from '../../shared/utils/logger.js';
 import Money from '../../shared/utils/money.js';
+import { addMonths, getFirstDayOfMonth } from '../../shared/utils/date.js';
+import { processRecognition } from '../../accounting/recognition.service.js';
 import {
   getTrialBalance,
   getIncomeStatement,
@@ -251,6 +253,38 @@ export async function getChurnReportService(organizationId, query) {
   return result;
 }
 
+/**
+ * Run manual month-end revenue recognition for a period.
+ * @param {string} organizationId - Organization ID
+ * @param {Object} data - Run payload
+ * @param {string} userId - User ID triggering the run
+ * @returns {Promise<Object>} Recognition result
+ */
+export async function runRevenueRecognitionService(organizationId, data, userId) {
+  const periodMonth = data?.period_month
+    ? getFirstDayOfMonth(new Date(data.period_month))
+    : addMonths(getFirstDayOfMonth(new Date()), -1);
+
+  const result = await processRecognition({
+    organizationId,
+    periodMonth,
+    createdById: userId,
+  });
+
+  logger.info('Manual revenue recognition run completed', {
+    organizationId,
+    periodMonth: periodMonth.toISOString().slice(0, 7),
+    processed: result.processed,
+    skipped: result.skipped,
+    errors: result.errors.length,
+  });
+
+  return {
+    period_month: periodMonth,
+    ...result,
+  };
+}
+
 export default {
   getTrialBalanceReport,
   getIncomeStatementReport,
@@ -259,4 +293,5 @@ export default {
   getDeferredRevenueWaterfallReport,
   getMRRReport,
   getChurnReportService,
+  runRevenueRecognitionService,
 };

@@ -1,5 +1,8 @@
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import { prisma } from '../../config/database.js';
+import config from '../../config/env.js';
+import redis from '../../config/redis.js';
 import logger from '../../shared/utils/logger.js';
 import { 
   ConflictError, 
@@ -7,9 +10,15 @@ import {
   ValidationError,
   NotFoundError 
 } from '../../shared/errors/index.js';
-import { generateTokens, revokeRefreshToken, verifyRefreshToken } from './token.service.js';
+import {
+  generateAccessToken,
+  generateTokens,
+  revokeAllUserRefreshTokens,
+  revokeRefreshToken,
+  verifyRefreshToken,
+  blacklistAccessToken,
+} from './token.service.js';
 import { seedSystemAccounts } from '../../accounting/accounts.service.js';
-import { SYSTEM_ACCOUNTS } from '../../accounting/accounting.constants.js';
 
 /**
  * Auth Service
