@@ -1,9 +1,9 @@
 import { prisma } from '../config/database.js';
+import redis from '../config/redis.js';
 import { ForbiddenError, UnauthorizedError } from '../shared/errors/index.js';
 
-// Simple in-memory cache (replace with Redis in production)
-const orgCache = new Map();
-const CACHE_TTL = 60000; // 60 seconds
+const CACHE_TTL_SECONDS = 60;
+const TENANT_CACHE_PREFIX = 'tenant_org:';
 
 /**
  * Extracts organizationId from verified JWT and verifies organization is active.
@@ -24,31 +24,43 @@ const tenantMiddleware = async (req, res, next) => {
       return next(new UnauthorizedError('No organization associated with user'));
     }
 
-    // Check cache first
-    let org = orgCache.get(organizationId);
-    
+    const cacheKey = `${TENANT_CACHE_PREFIX}${organizationId}`;
+    let org = null;
+
+    // Cache read is best-effort. If Redis is unavailable, continue with database lookup.
+    try {
+      const cached = await redis.get(cacheKey);
+      if (cached) {
+        org = JSON.parse(cached);
+      }
+    } catch (_error) {
+      org = null;
+    }
+
     if (!org) {
-      // Fetch from database
       org = await prisma.organization.findFirst({
-        where: { 
+        where: {
           id: organizationId,
-          deleted_at: null
+          deleted_at: null,
         },
         select: {
           id: true,
           name: true,
           slug: true,
           status: true,
-        }
+          deleted_at: true,
+        },
       });
 
       if (!org) {
         return next(new ForbiddenError('Organization not found or has been deleted'));
       }
 
-      // Cache the result
-      orgCache.set(organizationId, org);
-      setTimeout(() => orgCache.delete(organizationId), CACHE_TTL);
+      try {
+        await redis.setex(cacheKey, CACHE_TTL_SECONDS, JSON.stringify(org));
+      } catch (_error) {
+        // Ignore cache write errors and continue.
+      }
     }
 
     // Verify organization is active

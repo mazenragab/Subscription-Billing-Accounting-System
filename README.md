@@ -45,12 +45,37 @@ This is a production-ready subscription billing system designed to handle comple
 - **Revenue Recognition**: Automated revenue recognition based on ASC 606 compliance
 - **Payment Processing**: Integration-ready payment gateway support
 - **Webhook Handling**: Event-driven architecture for billing events
-- **Comprehensive Reporting**: Financial and operational reporting capabilities
+
+## Live Demo Status
+
+- Live URL: not configured in this repository yet.
+- Recommended deployment target: Railway or Render with two runtime processes:
+1. API process: `npm run start`
+2. Worker process: `npm run worker`
+- Required environment variables: `DATABASE_URL`, `REDIS_URL`, `JWT_SECRET`, `WEBHOOK_SIGNING_SECRET`
+
+## Scope Notes (Implemented vs Planned)
+
+The items below are planned and not fully implemented as end-to-end features yet:
+
+- Tiered pricing and usage-based billing models
+- Tax compliance/reporting workflows
+- Refund issuance workflows
+
+## Required Evaluation Endpoints
+
+These endpoints are available to run the core task flow manually:
+
+1. `POST /api/v1/billing/run-monthly-invoices`
+2. `POST /api/v1/accounting/recognize-revenue`
+3. `POST /api/v1/invoices/:id/payments`
+4. `GET /api/v1/reports/income-statement`
+5. `GET /api/v1/reports/balance-sheet`
 
 ## ✨ Key Features
 
 ### Billing & Subscriptions
-- ✅ Multiple subscription pricing models (flat-rate, tiered, usage-based)
+- [x] Flat-rate subscription pricing model
 - ✅ Flexible billing cycles with customizable intervals
 - ✅ Prorated billing for mid-cycle changes
 - ✅ Automated renewal management
@@ -61,7 +86,7 @@ This is a production-ready subscription billing system designed to handle comple
 - ✅ Chart of accounts management
 - ✅ Double-entry journal entries with GL posting
 - ✅ Automated revenue recognition and deferral
-- ✅ Tax calculation and compliance
+- [x] Core accounting reports (trial balance, income statement, balance sheet)
 - ✅ Financial reconciliation tools
 - ✅ Audit trail for all transactions
 
@@ -69,7 +94,6 @@ This is a production-ready subscription billing system designed to handle comple
 - ✅ Payment method management
 - ✅ Automated dunning (payment retry logic)
 - ✅ Failed payment handling and recovery
-- ✅ Refund management
 - ✅ Payment reconciliation
 
 ### Invoicing
@@ -555,7 +579,6 @@ Payment processing and reconciliation.
 - Multi-currency support
 - Payment status tracking
 - Automatic dunning on failures
-- Refund management
 
 ### 📈 Plans Module
 Subscription plan definition and management.
@@ -2462,4 +2485,6 @@ npm run dev
 
 # 5. In another terminal, run workers
 npm run worker:dev
+
+
 
