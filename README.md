@@ -70,8 +70,7 @@ These endpoints are available to run the core task flow manually:
 2. `POST /api/v1/accounting/recognize-revenue`
 3. `POST /api/v1/invoices/:id/payments`
 4. `GET /api/v1/reports/income-statement`
-5. `GET /api/v1/reports/balance-sheet`
-
+5. GET /api/v1/reports/balance-sheet\r\n\r\n## Accounting Flow\r\n\r\n1. Invoice issuance posts: DR Accounts Receivable (1200) / CR Deferred Revenue (2100)\r\n2. Payment recording posts: DR Cash (1100) / CR Accounts Receivable (1200)\r\n3. Month-end recognition posts: DR Deferred Revenue (2100) / CR Subscription Revenue (4100)\r\n
 ## ✨ Key Features
 
 ### Billing & Subscriptions
@@ -2485,6 +2484,7 @@ npm run dev
 
 # 5. In another terminal, run workers
 npm run worker:dev
+
 
 
 

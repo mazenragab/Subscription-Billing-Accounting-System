@@ -3,6 +3,8 @@
   import cors from 'cors';
   import morgan from 'morgan';
   import cookieParser from 'cookie-parser';
+  import swaggerJsdoc from 'swagger-jsdoc';
+  import swaggerUi from 'swagger-ui-express';
   import { registerRoutes } from './modules/index.js';
   import requestIdMiddleware from './middleware/requestId.middleware.js';
   import errorHandlerMiddleware from './middleware/errorHandler.middleware.js';
@@ -115,6 +117,31 @@
         version: process.env.npm_package_version || '1.0.0',
       });
     });
+
+    // Swagger/OpenAPI docs
+    const swaggerSpec = swaggerJsdoc({
+      definition: {
+        openapi: '3.0.0',
+        info: {
+          title: 'Subscription Billing API',
+          version: process.env.npm_package_version || '1.0.0',
+        },
+        servers: [{ url: '/api/v1' }],
+        components: {
+          securitySchemes: {
+            bearerAuth: {
+              type: 'http',
+              scheme: 'bearer',
+              bearerFormat: 'JWT',
+            },
+          },
+        },
+        security: [{ bearerAuth: [] }],
+      },
+      apis: ['./src/modules/**/*.routes.js', './src/modules/**/*.controller.js'],
+    });
+
+    app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
     // ============================================================
     // API Routes
