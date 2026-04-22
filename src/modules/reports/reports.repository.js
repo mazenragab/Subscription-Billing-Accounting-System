@@ -20,9 +20,11 @@ export async function getTrialBalance(organizationId, fromDate, toDate) {
       coa.type,
       coa.normal_balance,
       COALESCE(SUM(
-        CASE 
+        CASE
+          WHEN je.id IS NULL THEN 0
           WHEN jel.type = 'DEBIT' THEN jel.amount_cents
           WHEN jel.type = 'CREDIT' THEN -jel.amount_cents
+          ELSE 0
         END
       ), 0) AS net_balance_cents
     FROM chart_of_accounts coa
@@ -54,9 +56,11 @@ export async function getIncomeStatement(organizationId, fromDate, toDate) {
       coa.code,
       coa.name,
       COALESCE(SUM(
-        CASE 
+        CASE
+          WHEN je.id IS NULL THEN 0
           WHEN jel.type = 'CREDIT' THEN jel.amount_cents
           WHEN jel.type = 'DEBIT' THEN -jel.amount_cents
+          ELSE 0
         END
       ), 0) AS amount_cents
     FROM chart_of_accounts coa
@@ -78,9 +82,11 @@ export async function getIncomeStatement(organizationId, fromDate, toDate) {
       coa.code,
       coa.name,
       COALESCE(SUM(
-        CASE 
+        CASE
+          WHEN je.id IS NULL THEN 0
           WHEN jel.type = 'DEBIT' THEN jel.amount_cents
           WHEN jel.type = 'CREDIT' THEN -jel.amount_cents
+          ELSE 0
         END
       ), 0) AS amount_cents
     FROM chart_of_accounts coa
@@ -130,9 +136,11 @@ export async function getBalanceSheet(organizationId, asOfDate) {
         coa.type,
         coa.normal_balance,
         COALESCE(SUM(
-          CASE jel.type
-            WHEN 'DEBIT'  THEN  jel.amount_cents
-            WHEN 'CREDIT' THEN -jel.amount_cents
+          CASE
+            WHEN je.id IS NULL THEN 0
+            WHEN jel.type = 'DEBIT' THEN jel.amount_cents
+            WHEN jel.type = 'CREDIT' THEN -jel.amount_cents
+            ELSE 0
           END
         ), 0) AS net_debit_cents
       FROM chart_of_accounts coa
@@ -209,7 +217,7 @@ export async function getARAging(organizationId, asOfDate) {
       c.email as customer_email,
       i.id as invoice_id,
       i.invoice_number,
-      i.total_cents,
+      (i.total_cents - COALESCE(p.total_paid_cents, 0)) AS outstanding_cents,
       i.issued_at,
       i.due_at,
       EXTRACT(DAY FROM (${asOfDate} - i.due_at)) as days_overdue,
@@ -222,9 +230,18 @@ export async function getARAging(organizationId, asOfDate) {
       END as bucket
     FROM invoices i
     JOIN customers c ON c.id = i.customer_id
+    LEFT JOIN (
+      SELECT
+        invoice_id,
+        SUM(amount_cents) AS total_paid_cents
+      FROM payments
+      WHERE organization_id = ${organizationId}
+      GROUP BY invoice_id
+    ) p ON p.invoice_id = i.id
     WHERE i.organization_id = ${organizationId}
       AND i.status = 'ISSUED'
       AND i.due_at <= ${asOfDate}
+      AND (i.total_cents - COALESCE(p.total_paid_cents, 0)) > 0
     ORDER BY c.name, i.due_at
   `;
   
@@ -240,7 +257,7 @@ export async function getARAging(organizationId, asOfDate) {
   for (const invoice of aging) {
     const bucketKey = getBucketKey(invoice.bucket);
     buckets[bucketKey].count++;
-    buckets[bucketKey].amount_cents += Number(invoice.total_cents);
+    buckets[bucketKey].amount_cents += Number(invoice.outstanding_cents);
     buckets[bucketKey].invoices.push(invoice);
   }
   

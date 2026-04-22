@@ -121,6 +121,7 @@ model Plan {
   pending_subscriptions Subscription[] @relation("PendingPlan")
 
   @@unique([organization_id, name])
+  @@unique([organization_id, id])
   @@index([organization_id])
   @@map("plans")
 }
@@ -155,6 +156,7 @@ model DiscountCode {
   subscription_discounts SubscriptionDiscount[]
 
   @@unique([organization_id, code])
+  @@unique([organization_id, id])
   @@index([organization_id])
   @@map("discount_codes")
 }
@@ -185,6 +187,7 @@ model Customer {
   payment_methods PaymentMethod[]
 
   @@unique([organization_id, email])
+  @@unique([organization_id, id])
   @@index([organization_id])
   @@index([organization_id, email])
   @@map("customers")
@@ -205,8 +208,9 @@ model CustomerBillingInfo {
   tax_id          String?   @db.VarChar(50)
   updated_at      DateTime  @updatedAt @db.Timestamptz
 
-  customer Customer @relation(fields: [customer_id], references: [id])
+  customer Customer @relation(fields: [organization_id, customer_id], references: [organization_id, id])
 
+  @@unique([organization_id, customer_id])
   @@map("customer_billing_info")
 }
 
@@ -233,9 +237,9 @@ model Subscription {
   updated_at           DateTime  @updatedAt @db.Timestamptz
 
   organization  Organization @relation(fields: [organization_id], references: [id])
-  customer      Customer     @relation(fields: [customer_id], references: [id])
-  plan          Plan         @relation(fields: [plan_id], references: [id])
-  pending_plan  Plan?        @relation("PendingPlan", fields: [pending_plan_id], references: [id])
+  customer      Customer     @relation(fields: [organization_id, customer_id], references: [organization_id, id])
+  plan          Plan         @relation(fields: [organization_id, plan_id], references: [organization_id, id])
+  pending_plan  Plan?        @relation("PendingPlan", fields: [organization_id, pending_plan_id], references: [organization_id, id])
 
   discounts      SubscriptionDiscount[]
   status_history SubscriptionStatusHistory[]
@@ -247,6 +251,7 @@ model Subscription {
   @@index([plan_id])
   @@index([organization_id, status])
   @@index([current_period_end])
+  @@unique([organization_id, id])
   @@map("subscriptions")
 }
 
@@ -259,8 +264,8 @@ model SubscriptionDiscount {
   expires_at       DateTime? @db.Timestamptz
   is_active        Boolean   @default(true)
 
-  subscription  Subscription @relation(fields: [subscription_id], references: [id])
-  discount_code DiscountCode @relation(fields: [discount_code_id], references: [id])
+  subscription  Subscription @relation(fields: [organization_id, subscription_id], references: [organization_id, id])
+  discount_code DiscountCode @relation(fields: [organization_id, discount_code_id], references: [organization_id, id])
 
   @@unique([subscription_id, discount_code_id])
   @@map("subscription_discounts")
@@ -276,7 +281,7 @@ model SubscriptionStatusHistory {
   changed_by_id   String?
   created_at      DateTime @default(now()) @db.Timestamptz
 
-  subscription Subscription @relation(fields: [subscription_id], references: [id])
+  subscription Subscription @relation(fields: [organization_id, subscription_id], references: [organization_id, id])
   changed_by   User?        @relation(fields: [changed_by_id], references: [id])
 
   @@index([subscription_id])
@@ -312,8 +317,8 @@ model Invoice {
   updated_at      DateTime  @updatedAt @db.Timestamptz
 
   organization  Organization @relation(fields: [organization_id], references: [id])
-  customer      Customer     @relation(fields: [customer_id], references: [id])
-  subscription  Subscription @relation(fields: [subscription_id], references: [id])
+  customer      Customer     @relation(fields: [organization_id, customer_id], references: [organization_id, id])
+  subscription  Subscription @relation(fields: [organization_id, subscription_id], references: [organization_id, id])
 
   line_items    InvoiceLineItem[]
   payments      Payment[]
@@ -327,6 +332,7 @@ model Invoice {
   @@index([organization_id, status])
   @@index([organization_id, due_at])
   @@index([organization_id, period_start, period_end])
+  @@unique([organization_id, id])
   @@map("invoices")
 }
 
@@ -344,7 +350,7 @@ model InvoiceLineItem {
   period_end        DateTime? @db.Date
   created_at        DateTime  @default(now()) @db.Timestamptz
 
-  invoice Invoice @relation(fields: [invoice_id], references: [id])
+  invoice Invoice @relation(fields: [organization_id, invoice_id], references: [organization_id, id])
 
   @@index([invoice_id])
   @@map("invoice_line_items")
@@ -365,9 +371,9 @@ model Payment {
   created_at       DateTime @default(now()) @db.Timestamptz
 
   organization   Organization  @relation(fields: [organization_id], references: [id])
-  invoice        Invoice       @relation(fields: [invoice_id], references: [id])
-  customer       Customer      @relation(fields: [customer_id], references: [id])
-  journal_entry  JournalEntry? @relation(fields: [journal_entry_id], references: [id])
+  invoice        Invoice       @relation(fields: [organization_id, invoice_id], references: [organization_id, id])
+  customer       Customer      @relation(fields: [organization_id, customer_id], references: [organization_id, id])
+  journal_entry  JournalEntry? @relation(fields: [organization_id, journal_entry_id], references: [organization_id, id])
 
   @@unique([organization_id, idempotency_key])
   @@index([invoice_id])
@@ -387,8 +393,8 @@ model PaymentAttempt {
   next_retry_at   DateTime? @db.Timestamptz
 
   organization Organization @relation(fields: [organization_id], references: [id])
-  invoice      Invoice      @relation(fields: [invoice_id], references: [id])
-  customer     Customer     @relation(fields: [customer_id], references: [id])
+  invoice      Invoice      @relation(fields: [organization_id, invoice_id], references: [organization_id, id])
+  customer     Customer     @relation(fields: [organization_id, customer_id], references: [organization_id, id])
 
   @@index([invoice_id])
   @@map("payment_attempts")
@@ -409,7 +415,7 @@ model PaymentMethod {
   updated_at      DateTime @updatedAt @db.Timestamptz
 
   organization Organization @relation(fields: [organization_id], references: [id])
-  customer      Customer     @relation(fields: [customer_id], references: [id])
+  customer      Customer     @relation(fields: [organization_id, customer_id], references: [organization_id, id])
 
   @@index([organization_id])
   @@index([customer_id])
@@ -436,6 +442,7 @@ model ChartOfAccount {
   journal_entry_lines JournalEntryLine[]
 
   @@unique([organization_id, code])
+  @@unique([organization_id, id])
   @@index([organization_id])
   @@map("chart_of_accounts")
 }
@@ -462,6 +469,7 @@ model JournalEntry {
   revenue_recognition_schedules RevenueRecognitionSchedule[]
 
   @@unique([organization_id, entry_number])
+  @@unique([organization_id, id])
   @@index([source_type, source_id])
   @@index([organization_id, period_month])
   @@index([organization_id, posted_at(sort: Desc)])
@@ -480,9 +488,9 @@ model JournalEntryLine {
   description      String?  @db.VarChar(300)
   created_at       DateTime @default(now()) @db.Timestamptz
 
-  journal_entry JournalEntry   @relation(fields: [journal_entry_id], references: [id])
+  journal_entry JournalEntry   @relation(fields: [organization_id, journal_entry_id], references: [organization_id, id])
   organization  Organization   @relation(fields: [organization_id], references: [id])
-  account       ChartOfAccount @relation(fields: [account_id], references: [id])
+  account       ChartOfAccount @relation(fields: [organization_id, account_id], references: [organization_id, id])
 
   @@index([journal_entry_id])
   @@index([account_id])
@@ -502,9 +510,9 @@ model RevenueRecognitionSchedule {
   journal_entry_id String?
 
   organization  Organization  @relation(fields: [organization_id], references: [id])
-  invoice       Invoice       @relation(fields: [invoice_id], references: [id])
-  subscription  Subscription  @relation(fields: [subscription_id], references: [id])
-  journal_entry JournalEntry? @relation(fields: [journal_entry_id], references: [id])
+  invoice       Invoice       @relation(fields: [organization_id, invoice_id], references: [organization_id, id])
+  subscription  Subscription  @relation(fields: [organization_id, subscription_id], references: [organization_id, id])
+  journal_entry JournalEntry? @relation(fields: [organization_id, journal_entry_id], references: [organization_id, id])
 
   @@unique([invoice_id, period_month])
   @@index([organization_id, status, period_month])
@@ -528,6 +536,7 @@ model WebhookEndpoint {
   events_log   WebhookEvent[]
 
   @@index([organization_id])
+  @@unique([organization_id, id])
   @@map("webhook_endpoints")
 }
 
@@ -544,7 +553,7 @@ model WebhookEvent {
   created_at       DateTime  @default(now()) @db.Timestamptz
 
   organization Organization    @relation(fields: [organization_id], references: [id])
-  endpoint     WebhookEndpoint @relation(fields: [endpoint_id], references: [id])
+  endpoint     WebhookEndpoint @relation(fields: [organization_id, endpoint_id], references: [organization_id, id])
 
   @@index([organization_id, status, created_at])
   @@map("webhook_events")

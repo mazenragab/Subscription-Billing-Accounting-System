@@ -24,7 +24,9 @@ prisma/*.db
 prisma/*.db-journal
 
 # Prisma
-prisma/migrations/
+# Keep Prisma migrations tracked for reproducible deployments
+!prisma/migrations/
+!prisma/migrations/**
 prisma/seed.js
 !prisma/seed.js
 

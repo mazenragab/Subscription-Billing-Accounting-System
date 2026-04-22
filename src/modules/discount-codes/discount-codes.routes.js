@@ -16,6 +16,7 @@ import {
 import validateMiddleware from '../../middleware/validate.middleware.js';
 import authMiddleware from '../../middleware/auth.middleware.js';
 import tenantMiddleware from '../../middleware/tenant.middleware.js';
+import { requireRoles } from '../../middleware/role.middleware.js';
 
 const router = express.Router();
 
@@ -54,6 +55,7 @@ router.get('/validate/:code', validateDiscountCode);
  */
 router.post(
   '/',
+  requireRoles(['OWNER', 'ADMIN']),
   validateMiddleware({ body: createDiscountCodeSchema }),
   createDiscountCode
 );
@@ -72,6 +74,7 @@ router.get('/:id', getDiscountCodeById);
  */
 router.patch(
   '/:id',
+  requireRoles(['OWNER', 'ADMIN']),
   validateMiddleware({ body: updateDiscountCodeSchema }),
   updateDiscountCode
 );
@@ -81,6 +84,6 @@ router.patch(
  * @desc Delete discount code (soft delete)
  * @access Private (OWNER, ADMIN)
  */
-router.delete('/:id', deleteDiscountCode);
+router.delete('/:id', requireRoles(['OWNER', 'ADMIN']), deleteDiscountCode);
 
 export default router;
